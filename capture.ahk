@@ -1,4 +1,4 @@
-﻿#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
+#NoEnv  ; Recommended for performance and compatibility with future AutoHotkey releases.
 ; #Warn  ; Enable warnings to assist with detecting common errors.
 SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
@@ -10,9 +10,15 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ; => full screen window : +8px outside the screen in every direction (+16px width +16px height)
 ; => full vertical screen window : -8px inside the screen for title bar(vertical up) (+16px widht, +8px height)
 ; 5:4 std resolution ratio game
+;
+; IMPORTANT : text recognition on picture works better if each line has the same height ? Not entirely proved, works better if light pixel on top (1 determinist proof (MIN))
+;
 ; force maximalize window for most accurate resolution
 
-; Initialization
+#Include GDIP.ahk
+
+; initialization
+
 height_5_4 := 0
 width_5_4 := 0
 x_5_4_s := 0
@@ -26,6 +32,7 @@ key_poids := ""
 locations_index := {}
 key_x := ""
 key_y := ""
+
 Hotkey, !Numpad0, Termination, On
 Hotkey, !Numpad1, Calibrate, On
 return
@@ -75,10 +82,14 @@ Calibrate()
 	ReadFile("runes.csv", "AddToEffects_Index")
 	ReadFile("ratio_coordinates.csv", "AddToLocations_Index")
 	
+	CaptureImage("min")
+	CaptureImage("max")
+	CaptureImage("eff")
+	
 	; test
 	; HideTrayTip()
 	; TrayTip, , x %x_tw% y %y_tw% width %width_tw% height %height_tw% x_m %x_m% y_m %y_m% x_screen %A_ScreenWidth% y_screen %A_ScreenHeight% width_margin_w %width_margin_w% height_margin_w %height_margin_w% border_w %border_w% toolbar width %x_wLeft%
-	; TrayTip, , %width_5_4% %height_5_4% %x_5_4_s% %x_5_4_e%
+	; TrayTip, , %width_5_4% %height_5_4% %x_5_4_s% %y_5_4_s%
 	; testvar := ConvertToPx(x_5_4_s, 0.582896237, width_5_4, 0.045610034, 1)
 	; testvar2 := ConvertToPx(border_w, 0.316989738, height_5_4, 0.038154548, 11)
 	; TrayTip, , %testvar% %testvar2%
@@ -129,7 +140,10 @@ AddToEffects_Index(line)
 		key_blank := SubStr(line, 1+indexes_coma[2], indexes_coma[3]-indexes_coma[2]-1)
 		key_pa := SubStr(line, 1+indexes_coma[3], indexes_coma[4]-indexes_coma[3]-1)
 		key_ra := SubStr(line, 1+indexes_coma[4], indexes_coma[5]-indexes_coma[4]-1)
-		key_poids := Substr(line, 1+indexes_coma[5])
+		temp_eol := Substr(line, 1+indexes_coma[5])
+		StringReplace, temp_eol, temp_eol, `r, , All
+		StringReplace, temp_eol, temp_eol, `n, , All
+		key_poids := temp_eol
 	}
 	else
 	{
@@ -139,7 +153,10 @@ AddToEffects_Index(line)
 		effects_index[effect_key][key_blank] := SubStr(line, 1+indexes_coma[2], indexes_coma[3]-indexes_coma[2]-1)
 		effects_index[effect_key][key_pa] := SubStr(line, 1+indexes_coma[3], indexes_coma[4]-indexes_coma[3]-1)
 		effects_index[effect_key][key_ra] := SubStr(line, 1+indexes_coma[4], indexes_coma[5]-indexes_coma[4]-1)
-		effects_index[effect_key][key_poids] := Substr(line, 1+indexes_coma[5])
+		temp_eol := Substr(line, 1+indexes_coma[5])
+		StringReplace, temp_eol, temp_eol, `r, , All
+		StringReplace, temp_eol, temp_eol, `n, , All
+		effects_index[effect_key][key_poids] := temp_eol
 	}
 	
 	; test
@@ -169,14 +186,20 @@ AddToLocations_Index(line)
 	if(key_x = "")
 	{
 		key_x := SubStr(line, 1+indexes_coma[1], indexes_coma[2]-indexes_coma[1]-1)
-		key_y := SubStr(line, 1+indexes_coma[2])
+		temp_eol := SubStr(line, 1+indexes_coma[2])
+		StringReplace, temp_eol, temp_eol, `r, , All
+		StringReplace, temp_eol, temp_eol, `n, , All
+		key_y := temp_eol
 	}
 	else
 	{
 		location_key := SubStr(line, 1, indexes_coma[1]-1)
 		locations_index[location_key] := {}
 		locations_index[location_key][key_x] := SubStr(line, 1+indexes_coma[1], indexes_coma[2]-indexes_coma[1]-1)
-		locations_index[location_key][key_y] := SubStr(line, 1+indexes_coma[2])
+		temp_eol := SubStr(line, 1+indexes_coma[2])
+		StringReplace, temp_eol, temp_eol, `r, , All
+		StringReplace, temp_eol, temp_eol, `n, , All
+		locations_index[location_key][key_y] := temp_eol
 	}
 	
 	; test
@@ -191,4 +214,32 @@ AddToLocations_Index(line)
 	; }
 	; HideTrayTip()
 	; Traytip, , Coucou %teststring%
+}
+
+CaptureImage(pic_name)
+{
+	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index
+	pToken := Gdip_Startup()
+	folderPath := A_ScriptDir "\ScreenShots\"
+	fileName := pic_name . ".png" ; A_YYYY "-" A_MM "-" A_DD "-" A_Hour "-" A_Min "-" A_Sec ".png"
+	
+	key_xy_s := pic_name . "_xy_s"
+	key_xy_e := pic_name . "_xy_e"
+	x_s := ConvertToPx(x_5_4_s, locations_index[key_xy_s]["X"], width_5_4)
+	y_s := ConvertToPx(y_5_4_s, locations_index[key_xy_s]["Y"], height_5_4)
+	width := ConvertToPx(x_5_4_s, locations_index[key_xy_e]["X"], width_5_4) - x_s
+	height := ConvertToPx(y_5_4_s, locations_index[key_xy_e]["Y"], height_5_4) - y_s
+	
+	location := x_s . "|" . y_s . "|" . width . "|" . height
+	
+	pBitmap := Gdip_BitmapFromScreen(location)
+	saveFileTo := folderPath fileName                   
+	Gdip_SaveBitmapToFile(pBitmap, saveFileTo)
+	Gdip_DisposeImage(pBitmap)
+	
+	Gdip_Shutdown(pToken)
+	
+	; test
+	; HideTrayTip()
+	; TrayTip, , Coucou %location%
 }
