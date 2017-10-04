@@ -17,8 +17,17 @@ height_5_4 := 0
 width_5_4 := 0
 x_5_4_s := 0
 y_5_4_s := 0
+effects_index := {}
+key_rune := ""
+key_blank := ""
+key_pa := ""
+key_ra := ""
+key_poids := ""
+locations_index := {}
+key_x := ""
+key_y := ""
 Hotkey, !Numpad0, Termination, On
-Hotkey, !Numpad1, CalibrateSize, On
+Hotkey, !Numpad1, Calibrate, On
 return
 
 
@@ -41,7 +50,7 @@ Termination()
 	ExitApp
 }
 
-CalibrateSize()
+Calibrate()
 {
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s
 	SysGet, width_margin_w, 32 ; window resizable zone, horizontal size
@@ -63,6 +72,9 @@ CalibrateSize()
 	
 	y_5_4_s := border_w
 	
+	ReadFile("runes.csv", "AddToEffects_Index")
+	ReadFile("ratio_coordinates.csv", "AddToLocations_Index")
+	
 	; test
 	; HideTrayTip()
 	; TrayTip, , x %x_tw% y %y_tw% width %width_tw% height %height_tw% x_m %x_m% y_m %y_m% x_screen %A_ScreenWidth% y_screen %A_ScreenHeight% width_margin_w %width_margin_w% height_margin_w %height_margin_w% border_w %border_w% toolbar width %x_wLeft%
@@ -77,8 +89,106 @@ ConvertToPx(delta_margin, ratio, reference, delta_ratio := 0, n_delta_ratio := 0
 	return delta_margin + ((ratio + n_delta_ratio * delta_ratio) * reference) // 1
 }
 
-ReadFile(file_name)
+ReadFile(file_name, func_name)
 {
 	file := FileOpen(file_name, "r")
+	if(!IsObject(file))
+	{
+		HideTrayTip()
+		TrayTip, , Cant open the file : %file_name%
+		return
+	}
+	while(file.AtEOF = 0)
+	{
+		cur_line := file.ReadLine()
+		%func_name%(cur_line)
+		
+		; test
+		; cur_line := file.ReadLine()
+		; %func_name%(cur_line)
+		; HideTrayTip()
+		; TrayTip, , %cur_line%
+		; break
+	}
+	file.Close()
+}
+
+AddToEffects_Index(line)
+{
+	global effects_index, key_rune, key_blank, key_pa, key_ra, key_poids
+	i = 1
+	indexes_coma := []
+	while(i<6)
+	{
+		indexes_coma[i] := InStr(line, ",", false, 1, i)
+		i := i + 1
+	}
+	if(key_rune = "")
+	{
+		key_rune := SubStr(line, 1, indexes_coma[1]-1)
+		key_blank := SubStr(line, 1+indexes_coma[2], indexes_coma[3]-indexes_coma[2]-1)
+		key_pa := SubStr(line, 1+indexes_coma[3], indexes_coma[4]-indexes_coma[3]-1)
+		key_ra := SubStr(line, 1+indexes_coma[4], indexes_coma[5]-indexes_coma[4]-1)
+		key_poids := Substr(line, 1+indexes_coma[5])
+	}
+	else
+	{
+		effect_key := SubStr(line, 1+indexes_coma[1], indexes_coma[2]-indexes_coma[1]-1)
+		effects_index[effect_key] := {}
+		effects_index[effect_key][key_rune] := SubStr(line, 1, indexes_coma[1]-1)
+		effects_index[effect_key][key_blank] := SubStr(line, 1+indexes_coma[2], indexes_coma[3]-indexes_coma[2]-1)
+		effects_index[effect_key][key_pa] := SubStr(line, 1+indexes_coma[3], indexes_coma[4]-indexes_coma[3]-1)
+		effects_index[effect_key][key_ra] := SubStr(line, 1+indexes_coma[4], indexes_coma[5]-indexes_coma[4]-1)
+		effects_index[effect_key][key_poids] := Substr(line, 1+indexes_coma[5])
+	}
 	
+	; test
+	; teststring := ""
+	; For key1, value1 in effects_index
+	; {
+	; 	teststring := teststring . key1
+	; 	For key2, value2 in value1
+	; 	{
+	; 		teststring := teststring . key2 . value2
+	; 	}
+	; }
+	; HideTrayTip()
+	; Traytip, , Coucou %teststring%
+}
+
+AddToLocations_Index(line)
+{
+	global locations_index, key_x, key_y
+	i = 1
+	indexes_coma := []
+	while(i<3)
+	{
+		indexes_coma[i] := InStr(line, ",", false, 1, i)
+		i := i + 1
+	}
+	if(key_x = "")
+	{
+		key_x := SubStr(line, 1+indexes_coma[1], indexes_coma[2]-indexes_coma[1]-1)
+		key_y := SubStr(line, 1+indexes_coma[2])
+	}
+	else
+	{
+		location_key := SubStr(line, 1, indexes_coma[1]-1)
+		locations_index[location_key] := {}
+		locations_index[location_key][key_x] := SubStr(line, 1+indexes_coma[1], indexes_coma[2]-indexes_coma[1]-1)
+		locations_index[location_key][key_y] := SubStr(line, 1+indexes_coma[2])
+	}
+	
+	; test
+	; teststring := ""
+	; For key1, value1 in locations_index
+	; {
+	; 	teststring := teststring . key1
+	; 	For key2, value2 in value1
+	; 	{
+	; 		teststring := teststring . key2 . value2
+	; 	}
+	; }
+	; HideTrayTip()
+	; Traytip, , Coucou %teststring%
 }
