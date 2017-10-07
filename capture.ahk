@@ -15,8 +15,8 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ;
 ; force maximalize window for most accurate resolution
 
+#Persistent
 #Include GDIP.ahk
-
 ; initialization
 
 height_5_4 := 0
@@ -32,6 +32,12 @@ key_poids := ""
 locations_index := {}
 key_x := ""
 key_y := ""
+mage_id_w := ""
+min_index := []
+max_index := []
+vef_index := []
+def_index := []
+
 
 Hotkey, !Numpad0, Termination, On
 Hotkey, !Numpad1, Calibrate, On
@@ -59,12 +65,13 @@ Termination()
 
 Calibrate()
 {
-	global height_5_4, width_5_4, x_5_4_s, y_5_4_s
+	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index
 	SysGet, width_margin_w, 32 ; window resizable zone, horizontal size
 	SysGet, height_margin_w, 33 ; window resizable zone, vertical size
 	SysGet, border_w, 4 ; height of window title bar
 	SysGet, x_w, MonitorWorkArea ; represents usables coordinates of the screen. four variables, add Left Right Top Bottom to get either of them
 	WinMaximize, A ; current window
+	WinGetTitle, mage_id_w, A
 	WinGetPos, x_tw, y_tw, width_tw, height_tw, A ; positions and sizes of the active window, with all borders and margins
 	MouseGetPos, x_m, y_m ; positions of the mouse, reference is the active window (with all borders)
 	
@@ -93,6 +100,37 @@ Calibrate()
 	; testvar := ConvertToPx(x_5_4_s, 0.582896237, width_5_4, 0.045610034, 1)
 	; testvar2 := ConvertToPx(border_w, 0.316989738, height_5_4, 0.038154548, 11)
 	; TrayTip, , %testvar% %testvar2%
+	
+	min_index := StructureOcrResult(ApplyOCR("min"), min_index)
+	max_index := StructureOcrResult(ApplyOCR("max"), max_index)
+	vef_index := StructureOcrResult(ApplyOCR("eff"), vef_index)
+	
+	; test
+	global def_index
+	testvar1 := ""
+	For key, value in def_index
+	{
+		testvar1 := testvar1 . "///" . value
+	}
+	testvar2 := ""
+	For key, value in vef_index
+	{
+		testvar2 := testvar2 . "///" . value
+	}
+	testvar3 := ""
+	For key, value in min_index
+	{
+		testvar3 := testvar3 . "///" . value
+	}
+	testvar4 := ""
+	For key, value in max_index
+	{
+		testvar4 := testvar4 . "///" . value
+	}
+	MsgBox, %testvar1%
+	MsgBox, %testvar2%
+	MsgBox, %testvar3%
+	MsgBox, %testvar4%
 }
 
 ConvertToPx(delta_margin, ratio, reference, delta_ratio := 0, n_delta_ratio := 0)
@@ -128,32 +166,32 @@ AddToEffects_Index(line)
 {
 	global effects_index, key_rune, key_blank, key_pa, key_ra, key_poids
 	i = 1
-	indexes_coma := []
+	indexes_comma := []
 	while(i<6)
 	{
-		indexes_coma[i] := InStr(line, ",", false, 1, i)
+		indexes_comma[i] := InStr(line, ",", false, 1, i)
 		i := i + 1
 	}
 	if(key_rune = "")
 	{
-		key_rune := SubStr(line, 1, indexes_coma[1]-1)
-		key_blank := SubStr(line, 1+indexes_coma[2], indexes_coma[3]-indexes_coma[2]-1)
-		key_pa := SubStr(line, 1+indexes_coma[3], indexes_coma[4]-indexes_coma[3]-1)
-		key_ra := SubStr(line, 1+indexes_coma[4], indexes_coma[5]-indexes_coma[4]-1)
-		temp_eol := Substr(line, 1+indexes_coma[5])
+		key_rune := SubStr(line, 1, indexes_comma[1]-1)
+		key_blank := SubStr(line, 1+indexes_comma[2], indexes_comma[3]-indexes_comma[2]-1)
+		key_pa := SubStr(line, 1+indexes_comma[3], indexes_comma[4]-indexes_comma[3]-1)
+		key_ra := SubStr(line, 1+indexes_comma[4], indexes_comma[5]-indexes_comma[4]-1)
+		temp_eol := Substr(line, 1+indexes_comma[5])
 		StringReplace, temp_eol, temp_eol, `r, , All
 		StringReplace, temp_eol, temp_eol, `n, , All
 		key_poids := temp_eol
 	}
 	else
 	{
-		effect_key := SubStr(line, 1+indexes_coma[1], indexes_coma[2]-indexes_coma[1]-1)
+		effect_key := SubStr(line, 1+indexes_comma[1], indexes_comma[2]-indexes_comma[1]-1)
 		effects_index[effect_key] := {}
-		effects_index[effect_key][key_rune] := SubStr(line, 1, indexes_coma[1]-1)
-		effects_index[effect_key][key_blank] := SubStr(line, 1+indexes_coma[2], indexes_coma[3]-indexes_coma[2]-1)
-		effects_index[effect_key][key_pa] := SubStr(line, 1+indexes_coma[3], indexes_coma[4]-indexes_coma[3]-1)
-		effects_index[effect_key][key_ra] := SubStr(line, 1+indexes_coma[4], indexes_coma[5]-indexes_coma[4]-1)
-		temp_eol := Substr(line, 1+indexes_coma[5])
+		effects_index[effect_key][key_rune] := SubStr(line, 1, indexes_comma[1]-1)
+		effects_index[effect_key][key_blank] := SubStr(line, 1+indexes_comma[2], indexes_comma[3]-indexes_comma[2]-1)
+		effects_index[effect_key][key_pa] := SubStr(line, 1+indexes_comma[3], indexes_comma[4]-indexes_comma[3]-1)
+		effects_index[effect_key][key_ra] := SubStr(line, 1+indexes_comma[4], indexes_comma[5]-indexes_comma[4]-1)
+		temp_eol := Substr(line, 1+indexes_comma[5])
 		StringReplace, temp_eol, temp_eol, `r, , All
 		StringReplace, temp_eol, temp_eol, `n, , All
 		effects_index[effect_key][key_poids] := temp_eol
@@ -177,26 +215,26 @@ AddToLocations_Index(line)
 {
 	global locations_index, key_x, key_y
 	i = 1
-	indexes_coma := []
+	indexes_comma := []
 	while(i<3)
 	{
-		indexes_coma[i] := InStr(line, ",", false, 1, i)
+		indexes_comma[i] := InStr(line, ",", false, 1, i)
 		i := i + 1
 	}
 	if(key_x = "")
 	{
-		key_x := SubStr(line, 1+indexes_coma[1], indexes_coma[2]-indexes_coma[1]-1)
-		temp_eol := SubStr(line, 1+indexes_coma[2])
+		key_x := SubStr(line, 1+indexes_comma[1], indexes_comma[2]-indexes_comma[1]-1)
+		temp_eol := SubStr(line, 1+indexes_comma[2])
 		StringReplace, temp_eol, temp_eol, `r, , All
 		StringReplace, temp_eol, temp_eol, `n, , All
 		key_y := temp_eol
 	}
 	else
 	{
-		location_key := SubStr(line, 1, indexes_coma[1]-1)
+		location_key := SubStr(line, 1, indexes_comma[1]-1)
 		locations_index[location_key] := {}
-		locations_index[location_key][key_x] := SubStr(line, 1+indexes_coma[1], indexes_coma[2]-indexes_coma[1]-1)
-		temp_eol := SubStr(line, 1+indexes_coma[2])
+		locations_index[location_key][key_x] := SubStr(line, 1+indexes_comma[1], indexes_comma[2]-indexes_comma[1]-1)
+		temp_eol := SubStr(line, 1+indexes_comma[2])
 		StringReplace, temp_eol, temp_eol, `r, , All
 		StringReplace, temp_eol, temp_eol, `n, , All
 		locations_index[location_key][key_y] := temp_eol
@@ -242,4 +280,123 @@ CaptureImage(pic_name)
 	; test
 	; HideTrayTip()
 	; TrayTip, , Coucou %location%
+}
+
+ApplyOCR(pic_name)
+{
+	IfWinExist, FreeOCR
+	{
+		WinActivate, FreeOCR
+		SendInput !{f}
+		SendInput {Enter}
+		WinWaitActive, Select Image to OCR
+		SendInput {Raw}%pic_name%.png
+		SendInput {F4}
+		SendInput {Down}
+		SendInput {BackSpace}
+		SendInput {Raw}%A_ScriptDir%\ScreenShots
+		SendInput {Enter}
+		WinWaitActive, Barre d'adresses, , 0
+		IfWinExist, Barre d'adresses
+		{
+			SendInput {Enter}
+			SendInput {F6}
+			SendInput {Escape}
+			return ApplyOCR(pic_name)
+		}
+		else
+		{
+			SendInput {Enter 3}
+			WinWaitActive, FreeOCR, , 0
+			while(ErrorLevel)
+			{
+				SendInput {Enter 3}
+				WinWaitActive, FreeOCR, , 0
+			}
+		}
+		SendInput !{t}
+		SendInput {Enter}
+		SendInput !{o}
+		SendInput {Enter}
+		clipboard=
+		ClipWait, 0
+		SendInput !{t}
+		SendInput {c}
+		SendInput {Enter}
+		while(ErrorLevel)
+		{
+			ClipWait, 0
+		}
+		ocr_result := clipboard
+		comma := ","
+		StringReplace, ocr_result, ocr_result, `r, %comma% , All
+		StringReplace, ocr_result, ocr_result, `n, %comma% , All
+		StringReplace, ocr_result, ocr_result, %comma%%comma%, %comma%, All
+		
+		; test
+		; MsgBox, %ocr_result%
+		
+		return ocr_result
+	}
+	else
+	{
+		HideTrayTip()
+		TrayTip, , FreeOCR app must be running
+		return ""
+	}
+}
+
+StructureOcrResult(expression, container)
+{
+	global def_index
+	container := []
+	parts := StrSplit(expression, ",")
+	i := 0
+	For index, value in parts
+	{
+		if(index = 1 or value = "")
+		{
+			continue
+		}
+		else if value is integer
+		{
+			i := i + 1
+			container[i] := value
+		}
+		else
+		{
+			if(index = 2)
+			{
+				def_index := []
+			}
+			position := InStr(value, "%", false, 1, 1)
+			if(position)
+			{
+				nbr := SubStr(value, 1, position - 1)
+				if nbr is integer
+				{
+					i := i + 1
+					container[i] := nbr
+					def_index[i] := SubStr(value, position)
+					continue
+				}
+			}
+			position := InStr(value, " ", false, 1, 1)
+			if(position)
+			{
+				nbr := SubStr(value, 1, position - 1)
+				if nbr is integer
+				{
+					i := i + 1
+					container[i] := nbr
+					def_index[i] := SubStr(value, position + 1)
+					continue
+				}
+			}
+			i := i + 1
+			container[i] := "0"
+			def_index[i] := value
+		}
+	}
+	return container
 }
