@@ -89,9 +89,15 @@ Calibrate()
 	ReadFile("runes.csv", "AddToEffects_Index")
 	ReadFile("ratio_coordinates.csv", "AddToLocations_Index")
 	
-	CaptureImage("min")
-	CaptureImage("max")
-	CaptureImage("eff")
+	; CaptureImage("min")
+	; CaptureImage("max")
+	; CaptureImage("eff")
+	
+	; min_index := StructureOcrResult(ApplyOCR("min"), min_index)
+	; max_index := StructureOcrResult(ApplyOCR("max"), max_index)
+	; vef_index := StructureOcrResult(ApplyOCR("eff"), vef_index)
+	
+	;############################################################################################################################
 	
 	; test
 	; HideTrayTip()
@@ -101,36 +107,62 @@ Calibrate()
 	; testvar2 := ConvertToPx(border_w, 0.316989738, height_5_4, 0.038154548, 11)
 	; TrayTip, , %testvar% %testvar2%
 	
-	min_index := StructureOcrResult(ApplyOCR("min"), min_index)
-	max_index := StructureOcrResult(ApplyOCR("max"), max_index)
-	vef_index := StructureOcrResult(ApplyOCR("eff"), vef_index)
+	; test
+	; global def_index
+	; testvar1 := ""
+	; For key, value in def_index
+	; {
+		; testvar1 := testvar1 . "///" . value
+	; }
+	; testvar2 := ""
+	; For key, value in vef_index
+	; {
+		; testvar2 := testvar2 . "///" . value
+	; }
+	; testvar3 := ""
+	; For key, value in min_index
+	; {
+		; testvar3 := testvar3 . "///" . value
+	; }
+	; testvar4 := ""
+	; For key, value in max_index
+	; {
+		; testvar4 := testvar4 . "///" . value
+	; }
+	; MsgBox, %testvar1%
+	; MsgBox, %testvar2%
+	; MsgBox, %testvar3%
+	; MsgBox, %testvar4%
 	
 	; test
-	global def_index
+	; testvar := 0
+	; testvar := LevenshteinDistance("°/o Résistance Neutre", "% Résistance Neutre")
+	; MsgBox, %testvar% coucou
+	; testvar := LevenshteinDistance("°/o Résistance Neutre", "Résistance Neutre")
+	; MsgBox, %testvar% coucou
+	
+	; test
+	global effects_index
+	testvar := []
+	testvar[1] := "Résistance Pouoeée"
+	testvar[2] := "Do'-|'-|ages Eau"
+	testvar[3] := "°/o Résistance Neutre"
+	testvar := ConvertToKnownEffects(testvar)
 	testvar1 := ""
-	For key, value in def_index
+	For key, value in testvar
 	{
 		testvar1 := testvar1 . "///" . value
 	}
-	testvar2 := ""
-	For key, value in vef_index
-	{
-		testvar2 := testvar2 . "///" . value
-	}
-	testvar3 := ""
-	For key, value in min_index
-	{
-		testvar3 := testvar3 . "///" . value
-	}
-	testvar4 := ""
-	For key, value in max_index
-	{
-		testvar4 := testvar4 . "///" . value
-	}
-	MsgBox, %testvar1%
-	MsgBox, %testvar2%
-	MsgBox, %testvar3%
-	MsgBox, %testvar4%
+	MsgBox, je suis la %testvar1%
+	
+	; test
+	; global effects_index
+	; testvar := ""
+	; For key, value in effects_index
+	; {
+		; testvar := testvar . "///" . key
+	; }
+	; MsgBox, %testvar%
 }
 
 ConvertToPx(delta_margin, ratio, reference, delta_ratio := 0, n_delta_ratio := 0)
@@ -399,4 +431,86 @@ StructureOcrResult(expression, container)
 		}
 	}
 	return container
+}
+
+LevenshteinDistance(word, ref)
+{
+	distance := 0
+	big := ""
+	small := ""
+	if(StrLen(word) >= StrLen(ref))
+	{
+		StringLower, big, word
+		StringLower, small, ref
+	}
+	else
+	{
+		StringLower, big, ref
+		StringLower, small, word
+	}
+	len_big := StrLen(big)
+	len_small := StrLen(small)
+	tampon := len_big - len_small
+	i_small := 1
+	i_big := 1
+	while(i_big <= len_big)
+	{
+		if(i_small <= len_small)
+		{
+			if(SubStr(big, i_big, 1) != SubStr(small, i_small, 1))
+			{
+				distance := distance + 1
+				if(tampon>0)
+				{
+					i_small := i_small - 1
+					tampon := tampon - 1
+				}
+			}
+		}
+		else
+		{
+			distance := distance + 1
+		}
+		i_small := i_small + 1
+		i_big := i_big + 1
+	}
+	return distance
+}
+
+ConvertToKnownEffects(ocr_def_index)
+{
+	global effects_index
+	For i_ocr_effect, ocr_effect in ocr_def_index
+	{
+		distance := 0
+		len_ocr_effect := StrLen(ocr_effect)
+		match := ""
+		len_match := StrLen(match)
+		while(distance <= len_ocr_effect and match = "")
+		{
+			partial_dist := 0
+			while(partial_dist <= distance)
+			{
+				For effect, values in effects_index
+				{
+					len_effect := StrLen(effect)
+					if(len_effect = len_ocr_effect + partial_dist or len_effect = len_ocr_effect - partial_dist)
+					{
+						if(LevenshteinDistance(ocr_effect, effect) = distance)
+						{
+							if(len_effect > len_match)
+							{
+								match := effect
+								len_match := StrLen(match)
+								ocr_def_index[i_ocr_effect] := effect
+							}
+						}
+					}
+				}
+				partial_dist := partial_dist + 1
+			}
+			distance := distance + 1
+		}
+	}
+	return ocr_def_index
 }

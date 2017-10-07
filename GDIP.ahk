@@ -1,4 +1,4 @@
-﻿;
+;
 ;################################################################################################
 ;        Takes a screenshot, names it and puts it in folder called "ScreenShots"
 ; This entire script is just an edit of Gdip standard library v1.45 by tic (Tariq Porter) 07/09/11
