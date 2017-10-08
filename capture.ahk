@@ -20,6 +20,11 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ; initialization
 
 CoordMode, Mouse, Screen
+
+; ###############################################################################################################################
+testing := "TestApplyAttemptChanges"
+; ###############################################################################################################################
+
 height_5_4 := 0
 width_5_4 := 0
 x_5_4_s := 0
@@ -38,12 +43,17 @@ min_index := []
 max_index := []
 vef_index := []
 def_index := []
-
+reliquat := 0
+rf_runes := "runes.csv"
+rf_coordinates := "ratio_coordinates.csv"
+pic_min := "min"
+pic_max := "max"
+pic_effect := "eff"
 
 Hotkey, !Numpad0, Termination, On
 Hotkey, !Numpad1, Calibrate, On
+Hotkey, !Numpad2, %testing%, On
 return
-
 
 ; functions
 HideTrayTip() ; funHideTrayTip
@@ -66,7 +76,7 @@ Termination() ; funTermination
 
 Calibrate() ; funCalibrate
 {
-	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index, def_index
+	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index, def_index, rf_runes, rf_coordinates, pic_min, pic_max, pic_effect
 	SysGet, width_margin_w, 32 ; window resizable zone, horizontal size
 	SysGet, height_margin_w, 33 ; window resizable zone, vertical size
 	SysGet, border_w, 4 ; height of window title bar
@@ -87,87 +97,19 @@ Calibrate() ; funCalibrate
 	
 	y_5_4_s := border_w
 	
-	ReadFile("runes.csv", "AddToEffects_Index")
-	ReadFile("ratio_coordinates.csv", "AddToLocations_Index")
+	ReadFile(rf_runes, "AddToEffects_Index")
+	ReadFile(rf_coordinates, "AddToLocations_Index")
 	
-	; CaptureImage("min")
-	; CaptureImage("max")
-	; CaptureImage("eff")
+	CaptureImage(pic_min)
+	CaptureImage(pic_max)
+	CaptureImage(pic_effect)
 	
-	; min_index := StructureOcrResult(ApplyOCR("min"), min_index)
-	; max_index := StructureOcrResult(ApplyOCR("max"), max_index)
-	; vef_index := StructureOcrResult(ApplyOCR("eff"), vef_index)
+	min_index := StructureOcrResult(ApplyOCR(pic_min), min_index)
+	max_index := StructureOcrResult(ApplyOCR(pic_max), max_index)
+	vef_index := StructureOcrResult(ApplyOCR(pic_effect), vef_index)
 	
-	; def_index := ConvertToKnownEffects(def_index)
+	def_index := ConvertToKnownEffects(def_index)
 	
-	CaptureLastAttemptHistory()
-	
-	;############################################################################################################################
-	
-	; test
-	; HideTrayTip()
-	; TrayTip, , x %x_tw% y %y_tw% width %width_tw% height %height_tw% x_m %x_m% y_m %y_m% x_screen %A_ScreenWidth% y_screen %A_ScreenHeight% width_margin_w %width_margin_w% height_margin_w %height_margin_w% border_w %border_w% toolbar width %x_wLeft%
-	; TrayTip, , %width_5_4% %height_5_4% %x_5_4_s% %y_5_4_s%
-	; testvar := ConvertToPx(x_5_4_s, 0.582896237, width_5_4, 0.045610034, 1)
-	; testvar2 := ConvertToPx(border_w, 0.316989738, height_5_4, 0.038154548, 11)
-	; TrayTip, , %testvar% %testvar2%
-	
-	; test
-	; global def_index
-	; testvar1 := ""
-	; For key, value in def_index
-	; {
-		; testvar1 := testvar1 . "///" . value
-	; }
-	; testvar2 := ""
-	; For key, value in vef_index
-	; {
-		; testvar2 := testvar2 . "///" . value
-	; }
-	; testvar3 := ""
-	; For key, value in min_index
-	; {
-		; testvar3 := testvar3 . "///" . value
-	; }
-	; testvar4 := ""
-	; For key, value in max_index
-	; {
-		; testvar4 := testvar4 . "///" . value
-	; }
-	; MsgBox, %testvar1%
-	; MsgBox, %testvar2%
-	; MsgBox, %testvar3%
-	; MsgBox, %testvar4%
-	
-	; test
-	; testvar := 0
-	; testvar := LevenshteinDistance("°/o Résistance Neutre", "% Résistance Neutre")
-	; MsgBox, %testvar% coucou
-	; testvar := LevenshteinDistance("°/o Résistance Neutre", "Résistance Neutre")
-	; MsgBox, %testvar% coucou
-	
-	; test
-	; global effects_index
-	; testvar := []
-	; testvar[1] := "Résistance Pouoeée"
-	; testvar[2] := "Do'-|'-|ages Eau"
-	; testvar[3] := "°/o Résistance Neutre"
-	; testvar := ConvertToKnownEffects(testvar)
-	; testvar1 := ""
-	; For key, value in testvar
-	; {
-		; testvar1 := testvar1 . "///" . value
-	; }
-	; MsgBox, je suis la %testvar1%
-	
-	; test
-	; global effects_index
-	; testvar := ""
-	; For key, value in effects_index
-	; {
-		; testvar := testvar . "///" . key
-	; }
-	; MsgBox, %testvar%
 }
 
 ConvertToPx(delta_margin, ratio, reference, delta_ratio := 0, n_delta_ratio := 0) ; funConvertToPx
@@ -188,13 +130,6 @@ ReadFile(file_name, func_name) ; funReadFile
 	{
 		cur_line := file.ReadLine()
 		%func_name%(cur_line)
-		
-		; test
-		; cur_line := file.ReadLine()
-		; %func_name%(cur_line)
-		; HideTrayTip()
-		; TrayTip, , %cur_line%
-		; break
 	}
 	file.Close()
 }
@@ -233,19 +168,6 @@ AddToEffects_Index(line) ; funAddToEffects_Index
 		StringReplace, temp_eol, temp_eol, `n, , All
 		effects_index[effect_key][key_poids] := temp_eol
 	}
-	
-	; test
-	; teststring := ""
-	; For key1, value1 in effects_index
-	; {
-	; 	teststring := teststring . key1
-	; 	For key2, value2 in value1
-	; 	{
-	; 		teststring := teststring . key2 . value2
-	; 	}
-	; }
-	; HideTrayTip()
-	; Traytip, , Coucou %teststring%
 }
 
 AddToLocations_Index(line) ; funAddToLocations_Index
@@ -276,34 +198,21 @@ AddToLocations_Index(line) ; funAddToLocations_Index
 		StringReplace, temp_eol, temp_eol, `n, , All
 		locations_index[location_key][key_y] := temp_eol
 	}
-	
-	; test
-	; teststring := ""
-	; For key1, value1 in locations_index
-	; {
-	; 	teststring := teststring . key1
-	; 	For key2, value2 in value1
-	; 	{
-	; 		teststring := teststring . key2 . value2
-	; 	}
-	; }
-	; HideTrayTip()
-	; Traytip, , Coucou %teststring%
 }
 
 CaptureImage(pic_name) ; funCaptureImage
 {
-	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index
+	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y
 	pToken := Gdip_Startup()
 	folderPath := A_ScriptDir "\ScreenShots\"
 	fileName := pic_name . ".png" ; A_YYYY "-" A_MM "-" A_DD "-" A_Hour "-" A_Min "-" A_Sec ".png"
 	
 	key_xy_s := pic_name . "_xy_s"
 	key_xy_e := pic_name . "_xy_e"
-	x_s := ConvertToPx(x_5_4_s, locations_index[key_xy_s]["X"], width_5_4)
-	y_s := ConvertToPx(y_5_4_s, locations_index[key_xy_s]["Y"], height_5_4)
-	width := ConvertToPx(x_5_4_s, locations_index[key_xy_e]["X"], width_5_4) - x_s
-	height := ConvertToPx(y_5_4_s, locations_index[key_xy_e]["Y"], height_5_4) - y_s
+	x_s := ConvertToPx(x_5_4_s, locations_index[key_xy_s][key_x], width_5_4)
+	y_s := ConvertToPx(y_5_4_s, locations_index[key_xy_s][key_y], height_5_4)
+	width := ConvertToPx(x_5_4_s, locations_index[key_xy_e][key_x], width_5_4) - x_s
+	height := ConvertToPx(y_5_4_s, locations_index[key_xy_e][key_y], height_5_4) - y_s
 	
 	location := x_s . "|" . y_s . "|" . width . "|" . height
 	
@@ -313,14 +222,11 @@ CaptureImage(pic_name) ; funCaptureImage
 	Gdip_DisposeImage(pBitmap)
 	
 	Gdip_Shutdown(pToken)
-	
-	; test
-	; HideTrayTip()
-	; TrayTip, , Coucou %location%
 }
 
 ApplyOCR(pic_name) ; funApplyOCR
 {
+	global mage_id_w
 	IfWinExist, FreeOCR
 	{
 		WinActivate, FreeOCR
@@ -370,8 +276,7 @@ ApplyOCR(pic_name) ; funApplyOCR
 		StringReplace, ocr_result, ocr_result, `n, %comma% , All
 		StringReplace, ocr_result, ocr_result, %comma%%comma%, %comma%, All
 		
-		; test
-		; MsgBox, %ocr_result%
+		WinActivate, %mage_id_w%
 		
 		return ocr_result
 	}
@@ -385,7 +290,7 @@ ApplyOCR(pic_name) ; funApplyOCR
 
 StructureOcrResult(expression, container) ; funStructureOcrResult
 {
-	global def_index
+	global def_index, max_index, min_index
 	container := []
 	parts := StrSplit(expression, ",")
 	i := 0
@@ -415,6 +320,11 @@ StructureOcrResult(expression, container) ; funStructureOcrResult
 					i := i + 1
 					container[i] := nbr
 					def_index[i] := SubStr(value, position)
+					if(!max_index.HasKey(i))
+					{
+						max_index[i] := 0
+						min_index[i] := 0
+					}
 					continue
 				}
 			}
@@ -427,6 +337,11 @@ StructureOcrResult(expression, container) ; funStructureOcrResult
 					i := i + 1
 					container[i] := nbr
 					def_index[i] := SubStr(value, position + 1)
+					if(!max_index.HasKey(i))
+					{
+						max_index[i] := 0
+						min_index[i] := 0
+					}
 					continue
 				}
 			}
@@ -522,14 +437,14 @@ ConvertToKnownEffects(ocr_def_index) ; funConvertToKnownEffects
 
 CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 {
-	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index
+	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y
 	key_xy_s := "his_xy_s"
 	key_x_e := "his_x_e"
 	key_y_e := "his_y_e"
-	x_s := ConvertToPx(x_5_4_s, locations_index[key_xy_s]["X"], width_5_4)
-	y_s := ConvertToPx(y_5_4_s, locations_index[key_xy_s]["Y"], height_5_4)
-	x_e := ConvertToPx(x_5_4_s, locations_index[key_x_e]["X"], width_5_4)
-	y_e := ConvertToPx(y_5_4_s, locations_index[key_y_e]["Y"], height_5_4)
+	x_s := ConvertToPx(x_5_4_s, locations_index[key_xy_s][key_x], width_5_4)
+	y_s := ConvertToPx(y_5_4_s, locations_index[key_xy_s][key_y], height_5_4)
+	x_e := ConvertToPx(x_5_4_s, locations_index[key_x_e][key_x], width_5_4)
+	y_e := ConvertToPx(y_5_4_s, locations_index[key_y_e][key_y], height_5_4)
 	
 	SendInput {Click Down %x_s% %y_s%}
 	SendInput {Click Up %x_e% %y_e%}
@@ -550,4 +465,142 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 	index_last_line := InStr(history_result, ";", false, -1, 1)
 	last_line := SubStr(history_result, index_last_line + 1)
 	return last_line
+}
+
+ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
+{
+	global reliquat, vef_index, def_index, min_index, max_index
+	line_changes := CaptureLastAttemptHistory()
+	changes := StrSplit(line_changes, ", ")
+	found_reliquat := false
+	tampon_reliquat := 0
+	For index, change in changes
+	{
+		if(InStr(change, "reliquat"))
+		{
+			tampon_reliquat := tampon_reliquat + ConvertToReliquat(attempt_value, attempt_effect)
+			found_reliquat := true
+		}
+		else
+		{
+			value := 0
+			effect := ""
+			position := InStr(change, "%")
+			if(position)
+			{
+				value := SubStr(change, 1, position - 1)
+				effect := SubStr(change, position)
+			}
+			else
+			{
+				position := InStr(change, " ")
+				if(position)
+				{
+					value := SubStr(change, 1, position - 1)
+					effect := SubStr(change, position + 1)
+				}
+			}
+			if(!(value is integer))
+			{
+				MsgBox, fatal calculation _error
+				return
+			}
+			if(effect = "")
+			{
+				MsgBox, fatal _error unknown effect
+				return
+			}
+			else
+			{
+				if(InStr(change, "-"))
+				{
+					tampon_reliquat := tampon_reliquat + ConvertToReliquat(value, effect)
+				}
+				i_ef_index := HasValue(def_index, effect)
+				if(i_ef_index)
+				{
+					vef_index[i_ef_index] := vef_index[i_ef_index] + value
+					if(max_index[i_ef_index] = 0 and vef_index[i_ef_index] = 0 and min_index[i_ef_index] = 0)
+					{
+						max_index.RemoveAt(i_ef_index)
+						min_index.RemoveAt(i_ef_index)
+						vef_index.RemoveAt(i_ef_index)
+						def_index.RemoveAt(i_ef_index)
+					}
+				}
+				else
+				{
+					vef_index.Push(value)
+					def_index.Push(effect)
+					min_index.Push(0)
+					max_index.Push(0)
+				}
+			}
+		}
+	}
+	if(found_reliquat)
+	{
+		reliquat := reliquat + tampon_reliquat
+	}
+}
+
+ConvertToReliquat(value, effect) ; funConvertToReliquat
+{
+	global effects_index, vef_index, def_index, key_poids
+	i := HasValue(def_index, effect)
+	eff_reliquat := 0
+	vef := 0
+	if(i)
+	{
+		vef := vef_index[i]
+	}
+	if(effects_index.HasKey(effect))
+	{
+		if(vef < -1)
+		{
+			if(vef + value <= -1)
+			{
+				eff_reliquat := -1 * effects_index[effect][key_poids] * value / 2
+			}
+			else
+			{
+				pos_value := value + vef + 1
+				neg_value := -1 * (vef + 1)
+				eff_reliquat := -1 * effects_index[effect][key_poids] * (neg_value / 2 + pos_value)
+			}
+		}
+		else
+		{
+			if(vef + value < -1)
+			{
+				pos_value := -1 * (vef + 1)
+				neg_value := value + vef + 1
+				eff_reliquat := -1 * effects_index[effect][key_poids] * (neg_value / 2 + pos_value)
+			}
+			else
+			{
+				eff_reliquat := -1 * effects_index[effect][key_poids] * value
+			}
+		}
+	}
+	return eff_reliquat
+}
+
+HasValue(haystack, needle) ; funHasValue
+{
+	if(!IsObject(haystack) or haystack.Length() = 0)
+	{
+		return 0
+	}
+	else
+	{
+		For index, value in haystack
+		{
+			if(value = needle)
+			{
+				return index
+			}
+		}
+		return 0
+	}
 }
