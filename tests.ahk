@@ -23,3 +23,23 @@ TestApplyAttemptChanges() ; funTestApplyAttemptChanges()
 	}
 	MsgBox, reliquat_%reliquat%%testvar%
 }
+
+TestRfs() ; funTestRfs
+{
+	global effects_index, locations_index, floors_index, final_floors_index, tolerances_index
+	testvar1 := ""
+	; For index, effect in effects_index
+	; {
+		; testvar1 := testvar1 . "///" . index
+		; For key, value in effect
+		; {
+			; testvar1 := testvar1 . "---" . key . "___" . value
+		; }
+	; }
+	; MsgBox, %testvar1%
+	For index, final_floors in final_floors_index
+	{
+		testvar1 := testvar1 . "///" . final_floors . "___" . tolerances_index[index]
+	}
+	MsgBox, %testvar1%
+}

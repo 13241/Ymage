@@ -1,4 +1,4 @@
-Rune,effet,,Pa,Ra,poids
+Rune,effet,basic,Pa,Ra,poids
 Age,Agilité,1,3,10,1
 Cha,Chance,1,3,10,1
 Fo,Force,1,3,10,1
@@ -21,7 +21,7 @@ Ré Terre,Résistance Terre,1,,,2
 Do Air,Dommages Air,1,3,,5
 Do Cri,Dommages Critiques,1,3,,5
 Do Eau,Dommages Eau,1,3,,5
-Do Feu ,Dommages Feu,1,3,,5
+Do Feu,Dommages Feu,1,3,,5
 Do Neutre,Dommages Neutre,1,3,,5
 Do Pou,Dommages Poussée,1,3,,5
 Do Ren,Renvoie ! dommages,1,,,10

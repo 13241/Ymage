@@ -22,30 +22,48 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 CoordMode, Mouse, Screen
 
 ; ###############################################################################################################################
-testing := "TestApplyAttemptChanges"
+testing := "TestRfs"
 ; ###############################################################################################################################
 
+mage_id_w := ""
 height_5_4 := 0
 width_5_4 := 0
 x_5_4_s := 0
 y_5_4_s := 0
+
 effects_index := {}
 key_rune := ""
 key_blank := ""
 key_pa := ""
 key_ra := ""
-key_poids := ""
+key_pwr := ""
+
 locations_index := {}
 key_x := ""
 key_y := ""
-mage_id_w := ""
+
+floors_index := {}
+key_stdfloors := ""
+key_basic_std := ""
+key_pa_std := ""
+key_basic_spe := ""
+key_pa_spe := ""
+key_pa_delta := ""
+key_ra_delta := ""
+
+final_floors_index := []
+tolerances_index := []
+
 min_index := []
 max_index := []
 vef_index := []
 def_index := []
 reliquat := 0
+
 rf_runes := "runes.csv"
 rf_coordinates := "ratio_coordinates.csv"
+rf_floors := "palliers.csv"
+rf_final_floors := "finalisation.csv"
 pic_min := "min"
 pic_max := "max"
 pic_effect := "eff"
@@ -76,7 +94,7 @@ Termination() ; funTermination
 
 Calibrate() ; funCalibrate
 {
-	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index, def_index, rf_runes, rf_coordinates, pic_min, pic_max, pic_effect
+	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index, def_index, rf_runes, rf_coordinates, rf_floors, rf_final_floors, pic_min, pic_max, pic_effect
 	SysGet, width_margin_w, 32 ; window resizable zone, horizontal size
 	SysGet, height_margin_w, 33 ; window resizable zone, vertical size
 	SysGet, border_w, 4 ; height of window title bar
@@ -99,6 +117,8 @@ Calibrate() ; funCalibrate
 	
 	ReadFile(rf_runes, "AddToEffects_Index")
 	ReadFile(rf_coordinates, "AddToLocations_Index")
+	ReadFile(rf_floors, "AddToFloors_Index")
+	ReadFile(rf_final_floors, "AddToFinalFloors_Tolerances_Index")
 	
 	CaptureImage(pic_min)
 	CaptureImage(pic_max)
@@ -136,67 +156,88 @@ ReadFile(file_name, func_name) ; funReadFile
 
 AddToEffects_Index(line) ; funAddToEffects_Index
 {
-	global effects_index, key_rune, key_blank, key_pa, key_ra, key_poids
-	i = 1
-	indexes_comma := []
-	while(i<6)
-	{
-		indexes_comma[i] := InStr(line, ",", false, 1, i)
-		i := i + 1
-	}
+	global effects_index, key_rune, key_blank, key_pa, key_ra, key_pwr
+	StringReplace, line, line, `r, , All
+	StringReplace, line, line, `n, , All
+	keys := StrSplit(line, ",")
 	if(key_rune = "")
 	{
-		key_rune := SubStr(line, 1, indexes_comma[1]-1)
-		key_blank := SubStr(line, 1+indexes_comma[2], indexes_comma[3]-indexes_comma[2]-1)
-		key_pa := SubStr(line, 1+indexes_comma[3], indexes_comma[4]-indexes_comma[3]-1)
-		key_ra := SubStr(line, 1+indexes_comma[4], indexes_comma[5]-indexes_comma[4]-1)
-		temp_eol := Substr(line, 1+indexes_comma[5])
-		StringReplace, temp_eol, temp_eol, `r, , All
-		StringReplace, temp_eol, temp_eol, `n, , All
-		key_poids := temp_eol
+		key_rune := keys[1]
+		key_blank := keys[3]
+		key_pa := keys[4]
+		key_ra := keys[5]
+		key_pwr := keys[6]
 	}
 	else
 	{
-		effect_key := SubStr(line, 1+indexes_comma[1], indexes_comma[2]-indexes_comma[1]-1)
-		effects_index[effect_key] := {}
-		effects_index[effect_key][key_rune] := SubStr(line, 1, indexes_comma[1]-1)
-		effects_index[effect_key][key_blank] := SubStr(line, 1+indexes_comma[2], indexes_comma[3]-indexes_comma[2]-1)
-		effects_index[effect_key][key_pa] := SubStr(line, 1+indexes_comma[3], indexes_comma[4]-indexes_comma[3]-1)
-		effects_index[effect_key][key_ra] := SubStr(line, 1+indexes_comma[4], indexes_comma[5]-indexes_comma[4]-1)
-		temp_eol := Substr(line, 1+indexes_comma[5])
-		StringReplace, temp_eol, temp_eol, `r, , All
-		StringReplace, temp_eol, temp_eol, `n, , All
-		effects_index[effect_key][key_poids] := temp_eol
+		effects_index[keys[2]] := {}
+		effects_index[keys[2]][key_rune] := keys[1]
+		effects_index[keys[2]][key_blank] := keys[3]
+		effects_index[keys[2]][key_pa] := keys[4]
+		effects_index[keys[2]][key_ra] := keys[5]
+		effects_index[keys[2]][key_pwr] := keys[6]
 	}
 }
 
 AddToLocations_Index(line) ; funAddToLocations_Index
 {
 	global locations_index, key_x, key_y
-	i = 1
-	indexes_comma := []
-	while(i<3)
-	{
-		indexes_comma[i] := InStr(line, ",", false, 1, i)
-		i := i + 1
-	}
+	StringReplace, line, line, `r, , All
+	StringReplace, line, line, `n, , All
+	keys := StrSplit(line, ",")
 	if(key_x = "")
 	{
-		key_x := SubStr(line, 1+indexes_comma[1], indexes_comma[2]-indexes_comma[1]-1)
-		temp_eol := SubStr(line, 1+indexes_comma[2])
-		StringReplace, temp_eol, temp_eol, `r, , All
-		StringReplace, temp_eol, temp_eol, `n, , All
-		key_y := temp_eol
+		key_x := keys[2]
+		key_y := keys[3]
 	}
 	else
 	{
-		location_key := SubStr(line, 1, indexes_comma[1]-1)
-		locations_index[location_key] := {}
-		locations_index[location_key][key_x] := SubStr(line, 1+indexes_comma[1], indexes_comma[2]-indexes_comma[1]-1)
-		temp_eol := SubStr(line, 1+indexes_comma[2])
-		StringReplace, temp_eol, temp_eol, `r, , All
-		StringReplace, temp_eol, temp_eol, `n, , All
-		locations_index[location_key][key_y] := temp_eol
+		locations_index[keys[1]] := {}
+		locations_index[keys[1]][key_x] := keys[2]
+		locations_index[keys[1]][key_y] := keys[3]
+	}
+}
+
+AddToFloors_Index(line) ; funAddToFloors_Index
+{
+	global floors_index, key_stdfloors, key_basic_std, key_basic_spe, key_pa_std, key_pa_spe, key_pa_delta, key_ra_delta
+	StringReplace, line, line, `r, , All
+	StringReplace, line, line, `n, , All
+	keys := StrSplit(line, ",")
+	if(key_stdfloors = "")
+	{
+		key_stdfloors := keys[2]
+		key_basic_std := keys[3]
+		key_pa_std := keys[4]
+		key_basic_spe := keys[5]
+		key_pa_spe := keys[6]
+		key_pa_delta := keys[7]
+		key_ra_delta := keys[8]
+	}
+	else
+	{
+		floors_index[keys[1]] := {}
+		floors_index[keys[1]][key_stdfloors] := keys[2]
+		floors_index[keys[1]][key_basic_std] := keys[3]
+		floors_index[keys[1]][key_pa_std] := keys[4]
+		floors_index[keys[1]][key_basic_spe] := keys[5]
+		floors_index[keys[1]][key_pa_spe] := keys[6]
+		floors_index[keys[1]][key_pa_delta] := keys[7]
+		floors_index[keys[1]][key_ra_delta] := keys[8]
+	}
+}
+
+AddToFinalFloors_Tolerances_Index(line) ; funAddToFinalFloors_Tolerances_Index
+{
+	global final_floors_index, tolerances_index
+	StringReplace, line, line, `r, , All
+	StringReplace, line, line, `n, , All
+	keys := StrSplit(line, ",")
+	floor_value := keys[1]
+	if floor_value is integer
+	{
+		final_floors_index.Push(keys[1])
+		tolerances_index.Push(keys[2])
 	}
 }
 
@@ -500,7 +541,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 					effect := SubStr(change, position + 1)
 				}
 			}
-			if(!(value is integer))
+			if value is not integer
 			{
 				MsgBox, fatal calculation _error
 				return
@@ -546,7 +587,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 
 ConvertToReliquat(value, effect) ; funConvertToReliquat
 {
-	global effects_index, vef_index, def_index, key_poids
+	global effects_index, vef_index, def_index, key_pwr
 	i := HasValue(def_index, effect)
 	eff_reliquat := 0
 	vef := 0
@@ -560,13 +601,13 @@ ConvertToReliquat(value, effect) ; funConvertToReliquat
 		{
 			if(vef + value <= -1)
 			{
-				eff_reliquat := -1 * effects_index[effect][key_poids] * value / 2
+				eff_reliquat := -1 * effects_index[effect][key_pwr] * value / 2
 			}
 			else
 			{
 				pos_value := value + vef + 1
 				neg_value := -1 * (vef + 1)
-				eff_reliquat := -1 * effects_index[effect][key_poids] * (neg_value / 2 + pos_value)
+				eff_reliquat := -1 * effects_index[effect][key_pwr] * (neg_value / 2 + pos_value)
 			}
 		}
 		else
@@ -575,11 +616,11 @@ ConvertToReliquat(value, effect) ; funConvertToReliquat
 			{
 				pos_value := -1 * (vef + 1)
 				neg_value := value + vef + 1
-				eff_reliquat := -1 * effects_index[effect][key_poids] * (neg_value / 2 + pos_value)
+				eff_reliquat := -1 * effects_index[effect][key_pwr] * (neg_value / 2 + pos_value)
 			}
 			else
 			{
-				eff_reliquat := -1 * effects_index[effect][key_poids] * value
+				eff_reliquat := -1 * effects_index[effect][key_pwr] * value
 			}
 		}
 	}
@@ -602,5 +643,126 @@ HasValue(haystack, needle) ; funHasValue
 			}
 		}
 		return 0
+	}
+}
+
+; objective may be substracted by the adequate tolerance value, the function will try to do better than this adapted objective, while 
+; staying below the max value of the item (unless the objective is above the max value, in this case it will never do better than the 
+; objective
+ChooseRune(objective, adapted := true) ; funChooseRune
+{
+	global max_index, effects_index, key_blank, key_pa, key_ra, key_pwr, def_index, vef_index, floors_index, key_stdfloors, key_basic_std, key_basic_spe, key_pa_std, key_pa_spe, final_floors_index, tolerances_index
+	adapted_objective := []
+	if(adapted)
+	{
+		For index, value in objective
+		{
+			tolerance := 0
+			For i_floor, final_floor in final_floors_index
+			{
+				if(value >= final_floor)
+				{
+					tolerance := tolerances_index[i_floor]
+					break
+				}
+			}
+			adapted_value := value - tolerance
+			adapted_objective.InsertAt(index, adapted_value)
+		}
+	}
+	else
+	{
+		adapted_objective := objective
+	}
+	effect := ""
+	pwr_effect := 0
+	delta_value := 0
+	max_delta_value := 0
+	max_value := 0
+	current_value := 0
+	For index, def in def_index
+	{
+		if(vef_index[index] < adapted_objective[index])
+		{
+			if(effects_index[def][key_pwr] >= pwr_effect)
+			{
+				if((effects_index[def][key_pwr] = pwr_effect and adapted_objective[index] - vef_index[index] > delta_value) or effects_index[def][key_pwr] > pwr_effect)
+				{
+					effect := def
+					pwr_effect := effects_index[def][key_pwr]
+					delta_value := adapted_objective[index] - vef_index[index]
+					max_delta_value := max_index[index] - vef_index[index]
+					max_value := max_index[index]
+					current_value := vef_index[index]
+					if(max_delta_value < delta_value)
+					{
+						std_delta_value := floors_index[pwr_effect][key_stdfloors] - vef_index[index]
+						if(delta_value < std_delta_value)
+						{
+							max_delta_value := delta_value
+						}
+						else
+						{
+							delta_value := std_delta_value
+							max_delta_value := std_delta_value
+						}
+					}
+				}
+			}
+		}
+	}
+	if(effect = "")
+	{
+		return [0, ""]
+	}
+	else
+	{
+		value := 0
+		ra := effects_index[effect][key_ra]
+		pa := effects_index[effect][key_pa]
+		blank := effects_index[effect][key_blank]
+		if(adapted)
+		{
+			if(ra != "" and ra <= max_delta_value)
+			{
+				value := ra
+			}
+			else if(pa != "" and pa <= max_delta_value)
+			{
+				value := pa
+			}
+			else
+			{
+				value := blank
+			}
+		}
+		else
+		{
+			floor_basic := 0
+			floor_pa := 0
+			if(max_value > floors_index[pwr_effect][key_stdfloors])
+			{
+				floor_basic := floors_index[pwr_effect][key_basic_spe]
+				floor_pa := floors_index[pwr_effect][key_pa_spe]
+			}
+			else
+			{
+				floor_basic := floors_index[pwr_effect][key_basic_std]
+				floor_pa := floors_index[pwr_effect][key_pa_std]
+			}
+			if(current_value + blank <= floor_basic and blank <= delta_value)
+			{
+				value := blank
+			}
+			else if(pa != "" and current_value + pa <= floor_pa and pa <= delta_value)
+			{
+				value := pa
+			}
+			else if(ra != "" and ra <= delta_value)
+			{
+				value := ra
+			}
+		}
+		return [value, effect]
 	}
 }
