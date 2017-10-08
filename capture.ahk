@@ -19,6 +19,7 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 #Include GDIP.ahk
 ; initialization
 
+CoordMode, Mouse, Screen
 height_5_4 := 0
 width_5_4 := 0
 x_5_4_s := 0
@@ -45,7 +46,7 @@ return
 
 
 ; functions
-HideTrayTip() 
+HideTrayTip() ; funHideTrayTip
 {
 	TrayTip  ; Attempt to hide it the normal way.
 	if SubStr(A_OSVersion, 1, 3) = "10." 
@@ -56,16 +57,16 @@ HideTrayTip()
 	}
 }
 
-Termination()
+Termination() ; funTermination
 {
 	HideTrayTip()
 	TrayTip, , Exiting App
 	ExitApp
 }
 
-Calibrate()
+Calibrate() ; funCalibrate
 {
-	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index
+	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index, def_index
 	SysGet, width_margin_w, 32 ; window resizable zone, horizontal size
 	SysGet, height_margin_w, 33 ; window resizable zone, vertical size
 	SysGet, border_w, 4 ; height of window title bar
@@ -96,6 +97,10 @@ Calibrate()
 	; min_index := StructureOcrResult(ApplyOCR("min"), min_index)
 	; max_index := StructureOcrResult(ApplyOCR("max"), max_index)
 	; vef_index := StructureOcrResult(ApplyOCR("eff"), vef_index)
+	
+	; def_index := ConvertToKnownEffects(def_index)
+	
+	CaptureLastAttemptHistory()
 	
 	;############################################################################################################################
 	
@@ -142,18 +147,18 @@ Calibrate()
 	; MsgBox, %testvar% coucou
 	
 	; test
-	global effects_index
-	testvar := []
-	testvar[1] := "Résistance Pouoeée"
-	testvar[2] := "Do'-|'-|ages Eau"
-	testvar[3] := "°/o Résistance Neutre"
-	testvar := ConvertToKnownEffects(testvar)
-	testvar1 := ""
-	For key, value in testvar
-	{
-		testvar1 := testvar1 . "///" . value
-	}
-	MsgBox, je suis la %testvar1%
+	; global effects_index
+	; testvar := []
+	; testvar[1] := "Résistance Pouoeée"
+	; testvar[2] := "Do'-|'-|ages Eau"
+	; testvar[3] := "°/o Résistance Neutre"
+	; testvar := ConvertToKnownEffects(testvar)
+	; testvar1 := ""
+	; For key, value in testvar
+	; {
+		; testvar1 := testvar1 . "///" . value
+	; }
+	; MsgBox, je suis la %testvar1%
 	
 	; test
 	; global effects_index
@@ -165,12 +170,12 @@ Calibrate()
 	; MsgBox, %testvar%
 }
 
-ConvertToPx(delta_margin, ratio, reference, delta_ratio := 0, n_delta_ratio := 0)
+ConvertToPx(delta_margin, ratio, reference, delta_ratio := 0, n_delta_ratio := 0) ; funConvertToPx
 {
 	return delta_margin + ((ratio + n_delta_ratio * delta_ratio) * reference) // 1
 }
 
-ReadFile(file_name, func_name)
+ReadFile(file_name, func_name) ; funReadFile
 {
 	file := FileOpen(file_name, "r")
 	if(!IsObject(file))
@@ -194,7 +199,7 @@ ReadFile(file_name, func_name)
 	file.Close()
 }
 
-AddToEffects_Index(line)
+AddToEffects_Index(line) ; funAddToEffects_Index
 {
 	global effects_index, key_rune, key_blank, key_pa, key_ra, key_poids
 	i = 1
@@ -243,7 +248,7 @@ AddToEffects_Index(line)
 	; Traytip, , Coucou %teststring%
 }
 
-AddToLocations_Index(line)
+AddToLocations_Index(line) ; funAddToLocations_Index
 {
 	global locations_index, key_x, key_y
 	i = 1
@@ -286,7 +291,7 @@ AddToLocations_Index(line)
 	; Traytip, , Coucou %teststring%
 }
 
-CaptureImage(pic_name)
+CaptureImage(pic_name) ; funCaptureImage
 {
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index
 	pToken := Gdip_Startup()
@@ -314,7 +319,7 @@ CaptureImage(pic_name)
 	; TrayTip, , Coucou %location%
 }
 
-ApplyOCR(pic_name)
+ApplyOCR(pic_name) ; funApplyOCR
 {
 	IfWinExist, FreeOCR
 	{
@@ -378,7 +383,7 @@ ApplyOCR(pic_name)
 	}
 }
 
-StructureOcrResult(expression, container)
+StructureOcrResult(expression, container) ; funStructureOcrResult
 {
 	global def_index
 	container := []
@@ -433,7 +438,7 @@ StructureOcrResult(expression, container)
 	return container
 }
 
-LevenshteinDistance(word, ref)
+LevenshteinDistance(word, ref) ; funLevenshteinDistance
 {
 	distance := 0
 	big := ""
@@ -477,7 +482,7 @@ LevenshteinDistance(word, ref)
 	return distance
 }
 
-ConvertToKnownEffects(ocr_def_index)
+ConvertToKnownEffects(ocr_def_index) ; funConvertToKnownEffects
 {
 	global effects_index
 	For i_ocr_effect, ocr_effect in ocr_def_index
@@ -513,4 +518,36 @@ ConvertToKnownEffects(ocr_def_index)
 		}
 	}
 	return ocr_def_index
+}
+
+CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
+{
+	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index
+	key_xy_s := "his_xy_s"
+	key_x_e := "his_x_e"
+	key_y_e := "his_y_e"
+	x_s := ConvertToPx(x_5_4_s, locations_index[key_xy_s]["X"], width_5_4)
+	y_s := ConvertToPx(y_5_4_s, locations_index[key_xy_s]["Y"], height_5_4)
+	x_e := ConvertToPx(x_5_4_s, locations_index[key_x_e]["X"], width_5_4)
+	y_e := ConvertToPx(y_5_4_s, locations_index[key_y_e]["Y"], height_5_4)
+	
+	SendInput {Click Down %x_s% %y_s%}
+	SendInput {Click Up %x_e% %y_e%}
+	clipboard=
+	ClipWait, 0
+	SendInput ^{c}
+	while(ErrorLevel)
+	{
+		ClipWait, 0
+	}
+	history_result := clipboard
+	
+	dot_comma := ";"
+	StringReplace, history_result, history_result, `r, %dot_comma% , All
+	StringReplace, history_result, history_result, `n, %dot_comma% , All
+	StringReplace, history_result, history_result, %dot_comma%%dot_comma%, %dot_comma%, All
+	
+	index_last_line := InStr(history_result, ";", false, -1, 1)
+	last_line := SubStr(history_result, index_last_line + 1)
+	return last_line
 }
