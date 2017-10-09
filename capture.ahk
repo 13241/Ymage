@@ -23,7 +23,7 @@ CoordMode, Mouse, Screen
 CoordMOde, Pixel, Screen
 
 ; ###############################################################################################################################
-testing := "MainRoutine"
+testing := "TestRfs"
 ; ###############################################################################################################################
 
 mage_id_w := ""
@@ -60,6 +60,7 @@ max_index := []
 vef_index := []
 def_index := []
 reliquat := 0
+prospection_exception := false
 
 rf_runes := "runes.csv"
 rf_coordinates := "ratio_coordinates.csv"
@@ -71,7 +72,7 @@ pic_effect := "eff"
 
 Hotkey, !Numpad0, Termination, On
 Hotkey, !Numpad1, Calibrate, On
-Hotkey, !Numpad2, %testing%, Off
+Hotkey, !Numpad2, %testing%, On
 Hotkey, !Numpad3, MainRoutine, On
 return
 
@@ -654,7 +655,7 @@ HasValue(haystack, needle) ; funHasValue
 ; il doit s'en foutre de la prospection (entre autres)
 ChooseRune(objective, adapted := true) ; funChooseRune
 {
-	global max_index, effects_index, key_blank, key_pa, key_ra, key_pwr, def_index, vef_index, floors_index, key_stdfloors, key_basic_std, key_basic_spe, key_pa_std, key_pa_spe, final_floors_index, tolerances_index
+	global max_index, min_index, effects_index, key_blank, key_pa, key_ra, key_pwr, def_index, vef_index, floors_index, key_stdfloors, key_basic_std, key_basic_spe, key_pa_std, key_pa_spe, final_floors_index, tolerances_index, prospection_exception
 	adapted_objective := []
 	if(adapted)
 	{
@@ -685,29 +686,101 @@ ChooseRune(objective, adapted := true) ; funChooseRune
 	current_value := 0
 	For index, def in def_index
 	{
-		if(vef_index[index] < adapted_objective[index])
+		if(def = "Prospection")
 		{
-			if(effects_index[def][key_pwr] >= pwr_effect)
+			if(vef_index[index] = 0 or prospection_exception)
 			{
-				if((effects_index[def][key_pwr] = pwr_effect and adapted_objective[index] - vef_index[index] > delta_value) or effects_index[def][key_pwr] > pwr_effect)
+				temp_max_value := 0
+				if(max_index[index] >= min_index[index] + 2)
 				{
+					temp_max_value := min_index[index] + 2
+				}
+				else
+				{
+					temp_max_value := min_index[index]
+				}
+				if(vef_index[index] >= temp_max_value - 2)
+				{
+					prospection_exception := false
+					continue
+				}
+				else
+				{
+					if(!prospection_exception)
+					prospection_exception := true
 					effect := def
+					max_value := temp_max_value
 					pwr_effect := effects_index[def][key_pwr]
-					delta_value := adapted_objective[index] - vef_index[index]
-					max_delta_value := max_index[index] - vef_index[index]
-					max_value := max_index[index]
+					delta_value := max_value - vef_index[index]
+					max_delta_value := max_value - vef_index[index]
 					current_value := vef_index[index]
-					if(max_delta_value < delta_value)
+					break
+				}
+			}
+		}
+		else if(vef_index[index] < adapted_objective[index])
+		{
+			minimal_delta := 0
+			ra := effects_index[def][key_ra]
+			pa := effects_index[def][key_pa]
+			blank := effects_index[def][key_blank]
+			if(max_index[index] > floors_index[effects_index[def][key_pwr]][key_stdfloors])
+			{
+				if(vef_index[index] + blank <= floors_index[effects_index[def][key_pwr]][key_basic_spe])
+				{
+					minimal_delta := blank
+				}
+				else if(pa != "" and vef_index[index] + pa <= floors_index[effects_index[def][key_pwr]][key_pa_spe])
+				{
+					minimal_delta := pa
+				}
+			}
+			else
+			{
+				if(vef_index[index] + blank <= floors_index[effects_index[def][key_pwr]][key_basic_std])
+				{
+					minimal_delta := blank
+				}
+				else if (pa != "" and vef_index[index + pa <= floors_index[effects_index[def][key_pwr]][key_pa_std])
+				{
+					minimal_delta := pa
+				}
+			}
+			if(minimal_delta = 0)
+			{
+				if(ra != "")
+				{
+					minimal_delta := ra
+				}
+				else
+				{
+					minimal_delta := adapted_objective[index]
+				}
+			}
+			if(minimal_delta <= adapted_objective[index] - vef_index[index])
+			{
+				if(effects_index[def][key_pwr] >= pwr_effect)
+				{
+					if((effects_index[def][key_pwr] = pwr_effect and adapted_objective[index] - vef_index[index] > delta_value) or effects_index[def][key_pwr] > pwr_effect)
 					{
-						std_delta_value := floors_index[pwr_effect][key_stdfloors] - vef_index[index]
-						if(delta_value < std_delta_value)
+						effect := def
+						pwr_effect := effects_index[def][key_pwr]
+						delta_value := adapted_objective[index] - vef_index[index]
+						max_delta_value := max_index[index] - vef_index[index]
+						max_value := max_index[index]
+						current_value := vef_index[index]
+						if(max_delta_value < delta_value)
 						{
-							max_delta_value := delta_value
-						}
-						else
-						{
-							delta_value := std_delta_value
-							max_delta_value := std_delta_value
+							std_delta_value := floors_index[pwr_effect][key_stdfloors] - vef_index[index]
+							if(delta_value < std_delta_value)
+							{
+								max_delta_value := delta_value
+							}
+							else
+							{
+								delta_value := std_delta_value
+								max_delta_value := std_delta_value
+							}
 						}
 					}
 				}
@@ -803,11 +876,15 @@ UseRune(value, effect) ; funUseRune
 	
 	SendInput {Click %x% %y% 2}
 	
+	Sleep, 1000
+	
 	key_fus_xy := "fus_xy"
 	x_fus := ConvertToPx(x_5_4_s, locations_index[key_fus_xy][key_x], width_5_4)
 	y_fus := ConvertToPx(y_5_4_s, locations_index[key_fus_xy][key_y], height_5_4)
 	
 	SendInput {Click %x_fus% %y_fus%}
+	
+	Sleep, 1000
 }
 
 MainRoutine() ; funMainRoutine

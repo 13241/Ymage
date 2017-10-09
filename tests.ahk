@@ -26,7 +26,7 @@ TestApplyAttemptChanges() ; funTestApplyAttemptChanges()
 
 TestRfs() ; funTestRfs
 {
-	global effects_index, locations_index, floors_index, final_floors_index, tolerances_index
+	global effects_index, locations_index, floors_index, final_floors_index, tolerances_index, max_index, min_index, vef_index, def_index
 	testvar1 := ""
 	; For index, effect in effects_index
 	; {
@@ -37,9 +37,9 @@ TestRfs() ; funTestRfs
 		; }
 	; }
 	; MsgBox, %testvar1%
-	For index, final_floors in final_floors_index
+	For index, final_floors in def_index
 	{
-		testvar1 := testvar1 . "///" . final_floors . "___" . tolerances_index[index]
+		testvar1 := testvar1 . "///" . final_floors . "___" . vef_index[index] . "___" . min_index[index] . "___" . max_index[index]
 	}
 	MsgBox, %testvar1%
 }
