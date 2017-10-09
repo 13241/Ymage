@@ -787,28 +787,25 @@ ChooseRune(objective, adapted := true) ; funChooseRune
 			}
 			if(minimal_delta <= adapted_objective[index] - vef_index[index])
 			{
-				if(effects_index[def][key_pwr] >= pwr_effect)
+				if((effects_index[def][key_pwr] = pwr_effect and adapted_objective[index] - vef_index[index] > delta_value) or effects_index[def][key_pwr] > pwr_effect)
 				{
-					if((effects_index[def][key_pwr] = pwr_effect and adapted_objective[index] - vef_index[index] > delta_value) or effects_index[def][key_pwr] > pwr_effect)
+					effect := def
+					pwr_effect := effects_index[def][key_pwr]
+					delta_value := adapted_objective[index] - vef_index[index]
+					max_delta_value := max_index[index] - vef_index[index]
+					max_value := max_index[index]
+					current_value := vef_index[index]
+					if(max_delta_value < delta_value)
 					{
-						effect := def
-						pwr_effect := effects_index[def][key_pwr]
-						delta_value := adapted_objective[index] - vef_index[index]
-						max_delta_value := max_index[index] - vef_index[index]
-						max_value := max_index[index]
-						current_value := vef_index[index]
-						if(max_delta_value < delta_value)
+						std_delta_value := floors_index[pwr_effect][key_stdfloors] - vef_index[index]
+						if(delta_value < std_delta_value)
 						{
-							std_delta_value := floors_index[pwr_effect][key_stdfloors] - vef_index[index]
-							if(delta_value < std_delta_value)
-							{
-								max_delta_value := delta_value
-							}
-							else
-							{
-								delta_value := std_delta_value
-								max_delta_value := std_delta_value
-							}
+							max_delta_value := delta_value
+						}
+						else
+						{
+							delta_value := std_delta_value
+							max_delta_value := std_delta_value
 						}
 					}
 				}
