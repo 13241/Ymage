@@ -505,15 +505,20 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 	StringReplace, history_result, history_result, `n, %dot_comma% , All
 	StringReplace, history_result, history_result, %dot_comma%%dot_comma%, %dot_comma%, All
 	
-	index_last_line := InStr(history_result, ";", false, -1, 1)
-	last_line := SubStr(history_result, index_last_line + 1)
+	cut_history_result := StrSplit(history_result, dot_comma)
+	last_line := []
+	For index, value in cut_history_result
+	{
+		last_line.InsertAt(1, value)
+	}
 	return last_line
 }
 
 ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 {
 	global reliquat, vef_index, def_index, min_index, max_index
-	line_changes := CaptureLastAttemptHistory()
+	lines_changes := CaptureLastAttemptHistory()
+	line_changes := lines_changes[1]
 	changes := StrSplit(line_changes, ", ")
 	found_reliquat := false
 	tampon_reliquat := 0
@@ -741,7 +746,7 @@ ChooseRune(objective, adapted := true) ; funChooseRune
 				{
 					minimal_delta := blank
 				}
-				else if (pa != "" and vef_index[index + pa <= floors_index[effects_index[def][key_pwr]][key_pa_std])
+				else if (pa != "" and vef_index[index] + pa <= floors_index[effects_index[def][key_pwr]][key_pa_std])
 				{
 					minimal_delta := pa
 				}
@@ -876,15 +881,26 @@ UseRune(value, effect) ; funUseRune
 	
 	SendInput {Click %x% %y% 2}
 	
-	Sleep, 1000
+	delay_ms := 0
+	Random, delay_ms, 450, 650
+	
+	Sleep, %delay_ms%
 	
 	key_fus_xy := "fus_xy"
 	x_fus := ConvertToPx(x_5_4_s, locations_index[key_fus_xy][key_x], width_5_4)
 	y_fus := ConvertToPx(y_5_4_s, locations_index[key_fus_xy][key_y], height_5_4)
 	
-	SendInput {Click %x_fus% %y_fus%}
+	SendInput {Click %x_fus% %y_fus% 2}
 	
-	Sleep, 1000
+	Random, delay_ms, 450, 650
+	Sleep, %delay_ms%
+	
+	SendInput {Enter}
+	
+	Random, delay_ms, 85, 150
+	Sleep, %delay_ms%
+	
+	; cas extreme lag : envoyer un ping. Cas confusion last line : retirer et remettre l'item (pas viable?)
 }
 
 MainRoutine() ; funMainRoutine
