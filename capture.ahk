@@ -20,9 +20,10 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ; initialization
 
 CoordMode, Mouse, Screen
+CoordMOde, Pixel, Screen
 
 ; ###############################################################################################################################
-testing := "TestRfs"
+testing := "MainRoutine"
 ; ###############################################################################################################################
 
 mage_id_w := ""
@@ -70,7 +71,8 @@ pic_effect := "eff"
 
 Hotkey, !Numpad0, Termination, On
 Hotkey, !Numpad1, Calibrate, On
-Hotkey, !Numpad2, %testing%, On
+Hotkey, !Numpad2, %testing%, Off
+Hotkey, !Numpad3, MainRoutine, On
 return
 
 ; functions
@@ -129,7 +131,6 @@ Calibrate() ; funCalibrate
 	vef_index := StructureOcrResult(ApplyOCR(pic_effect), vef_index)
 	
 	def_index := ConvertToKnownEffects(def_index)
-	
 }
 
 ConvertToPx(delta_margin, ratio, reference, delta_ratio := 0, n_delta_ratio := 0) ; funConvertToPx
@@ -649,6 +650,8 @@ HasValue(haystack, needle) ; funHasValue
 ; objective may be substracted by the adequate tolerance value, the function will try to do better than this adapted objective, while 
 ; staying below the max value of the item (unless the objective is above the max value, in this case it will never do better than the 
 ; objective
+; a changer : selection de l'effet : il doit anticiper qu'il ne pourra pas monter le jet plus haut lors de la selection de l'effet
+; il doit s'en foutre de la prospection (entre autres)
 ChooseRune(objective, adapted := true) ; funChooseRune
 {
 	global max_index, effects_index, key_blank, key_pa, key_ra, key_pwr, def_index, vef_index, floors_index, key_stdfloors, key_basic_std, key_basic_spe, key_pa_std, key_pa_spe, final_floors_index, tolerances_index
@@ -765,4 +768,72 @@ ChooseRune(objective, adapted := true) ; funChooseRune
 		}
 		return [value, effect]
 	}
+}
+
+; a changer, trouver une methode pour attendre suffisamment mais pas trop (placement de rune et collecte d'informations)
+UseRune(value, effect) ; funUseRune
+{
+	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y, def_index, effects_index, key_blank, key_pa, key_ra
+	y_index := HasValue(def_index, effect)
+	key_xy_s := "run_xy_s"
+	key_x_e := "run_x_e"
+	key_y_e := "run_y_e"
+	key_x_d := "run_x_d"
+	key_y_d := "run_y_d"
+	y := ConvertToPx(y_5_4_s, locations_index[key_xy_s][key_y], height_5_4, locations_index[key_y_d][key_y], y_index - 1)
+	x_index := 0
+	if(effects_index[effect][key_blank] = value)
+	{
+		x_index := 1
+	}
+	else if(effects_index[effect][key_pa] = value)
+	{
+		x_index := 2
+	}
+	else if(effects_index[effect][key_ra] = value)
+	{
+		x_index := 3
+	}
+	if(index = 0)
+	{
+		MsgBox, Fatal _error _no rune found
+		return
+	}
+	x := ConvertToPx(x_5_4_s, locations_index[key_xy_s][key_x], width_5_4, locations_index[key_x_d][key_x], x_index - 1)
+	
+	SendInput {Click %x% %y% 2}
+	
+	key_fus_xy := "fus_xy"
+	x_fus := ConvertToPx(x_5_4_s, locations_index[key_fus_xy][key_x], width_5_4)
+	y_fus := ConvertToPx(y_5_4_s, locations_index[key_fus_xy][key_y], height_5_4)
+	
+	SendInput {Click %x_fus% %y_fus%}
+}
+
+MainRoutine() ; funMainRoutine
+{
+	global min_index, max_index
+	finished := false
+	while(finished = false)
+	{
+		rune := ChooseRune(min_index)
+		if(rune[1] = 0)
+		{
+			rune := ChooseRune(max_index)
+			if(rune[1] = 0)
+			{
+				rune := ChooseRune(max_index, false)
+			}
+		}
+		if(!(rune[1] = 0))
+		{
+			UseRune(rune[1], rune[2])
+			ApplyAttemptChanges(rune[1], rune[2])
+		}
+		else
+		{
+			finished := true
+		}
+	}
+	MsgBox, Objet terminé
 }
