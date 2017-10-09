@@ -31,6 +31,8 @@ height_5_4 := 0
 width_5_4 := 0
 x_5_4_s := 0
 y_5_4_s := 0
+hex_color_rune := ""
+hex_color_fusion := ""
 
 effects_index := {}
 key_rune := ""
@@ -97,7 +99,7 @@ Termination() ; funTermination
 
 Calibrate() ; funCalibrate
 {
-	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index, def_index, rf_runes, rf_coordinates, rf_floors, rf_final_floors, pic_min, pic_max, pic_effect
+	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index, def_index, rf_runes, rf_coordinates, rf_floors, rf_final_floors, pic_min, pic_max, pic_effect, hex_color_rune, hex_color_fusion, locations_index, key_x, key_y
 	SysGet, width_margin_w, 32 ; window resizable zone, horizontal size
 	SysGet, height_margin_w, 33 ; window resizable zone, vertical size
 	SysGet, border_w, 4 ; height of window title bar
@@ -122,6 +124,15 @@ Calibrate() ; funCalibrate
 	ReadFile(rf_coordinates, "AddToLocations_Index")
 	ReadFile(rf_floors, "AddToFloors_Index")
 	ReadFile(rf_final_floors, "AddToFinalFloors_Tolerances_Index")
+	
+	key_color_xy := "col_xy"
+	x_no_rune := ConvertToPx(x_5_4_s, locations_index[key_color_xy][key_x], width_5_4)
+	y_no_rune := ConvertToPx(y_5_4_s, locations_index[key_color_xy][key_y], height_5_4)
+	PixelGetColor, hex_color_rune, %x_no_rune%, %y_no_rune%
+	key_fus_xy := "fus_xy"
+	x_fus := ConvertToPx(x_5_4_s, locations_index[key_fus_xy][key_x], width_5_4)
+	y_fus := ConvertToPx(y_5_4_s, locations_index[key_fus_xy][key_y], height_5_4)
+	PixelGetColor, hex_color_fusion, %x_fus%, %y_fus%
 	
 	CaptureImage(pic_min)
 	CaptureImage(pic_max)
@@ -490,7 +501,9 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 	y_e := ConvertToPx(y_5_4_s, locations_index[key_y_e][key_y], height_5_4)
 	
 	SendInput {Click Down %x_s% %y_s%}
+	Sleep, 50
 	SendInput {Click Up %x_e% %y_e%}
+	Sleep, 50
 	clipboard=
 	ClipWait, 0
 	SendInput ^{c}
@@ -861,7 +874,7 @@ ChooseRune(objective, adapted := true) ; funChooseRune
 ; a changer, trouver une methode pour attendre suffisamment mais pas trop (placement de rune et collecte d'informations)
 UseRune(value, effect) ; funUseRune
 {
-	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y, def_index, effects_index, key_blank, key_pa, key_ra
+	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y, def_index, effects_index, key_blank, key_pa, key_ra, hex_color_rune, hex_color_fusion
 	y_index := HasValue(def_index, effect)
 	key_xy_s := "run_xy_s"
 	key_x_e := "run_x_e"
@@ -889,33 +902,55 @@ UseRune(value, effect) ; funUseRune
 	}
 	x := ConvertToPx(x_5_4_s, locations_index[key_xy_s][key_x], width_5_4, locations_index[key_x_d][key_x], x_index - 1)
 	
+	delay_ms := 0
 	SendInput {Click %x% %y% 2}
 	
-	delay_ms := 0
-	Random, delay_ms, 450, 650
-	
-	Sleep, %delay_ms%
+	key_color_xy := "col_xy"
+	x_no_rune := ConvertToPx(x_5_4_s, locations_index[key_color_xy][key_x], width_5_4)
+	y_no_rune := ConvertToPx(y_5_4_s, locations_index[key_color_xy][key_y], height_5_4)
+	no_hex_color_rune := ""
 	
 	key_fus_xy := "fus_xy"
 	x_fus := ConvertToPx(x_5_4_s, locations_index[key_fus_xy][key_x], width_5_4)
 	y_fus := ConvertToPx(y_5_4_s, locations_index[key_fus_xy][key_y], height_5_4)
+	no_hex_color_fusion := ""
+	PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%
+	
+	i := 0
+	while(no_hex_color_fusion = hex_color_fusion and i < 20)
+	{
+		i := i + 1
+		Random, delay_ms, 50, 100
+		Sleep, %delay_ms%
+		PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%
+	}
+	if(i = 20)
+	{
+		SendInput {Enter} ; procedure /ping
+	}
 	
 	SendInput {Click %x_fus% %y_fus% 2}
 	
-	Random, delay_ms, 450, 650
-	Sleep, %delay_ms%
+	PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%
 	
-	SendInput {Enter}
-	
-	Random, delay_ms, 85, 150
-	Sleep, %delay_ms%
-	
-	; cas extreme lag : envoyer un ping. Cas confusion last line : retirer et remettre l'item (pas viable?)
+	j := 0
+	while(no_hex_color_rune != hex_color_rune and j < 20)
+	{
+		j := j + 1
+		Random, delay_ms, 50, 100
+		Sleep, %delay_ms%
+		PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%
+	}
+	if(j = 20)
+	{
+		SendInput {Enter} ; procedure /ping
+	}
 }
 
 MainRoutine() ; funMainRoutine
 {
-	global min_index, max_index
+	global min_index, max_index, reliquat
+	Sleep, 1000
 	finished := false
 	while(finished = false)
 	{
@@ -938,5 +973,5 @@ MainRoutine() ; funMainRoutine
 			finished := true
 		}
 	}
-	MsgBox, Objet terminé
+	MsgBox, Objet terminé _ reliquat _ %reliquat%
 }
