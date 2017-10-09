@@ -524,7 +524,11 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 	tampon_reliquat := 0
 	For index, change in changes
 	{
-		if(InStr(change, "reliquat"))
+		if(change = "Échec")
+		{
+			break
+		}
+		else if(InStr(change, "reliquat"))
 		{
 			tampon_reliquat := tampon_reliquat + ConvertToReliquat(attempt_value, attempt_effect)
 			found_reliquat := true
@@ -660,7 +664,7 @@ HasValue(haystack, needle) ; funHasValue
 ; il doit s'en foutre de la prospection (entre autres)
 ChooseRune(objective, adapted := true) ; funChooseRune
 {
-	global max_index, min_index, effects_index, key_blank, key_pa, key_ra, key_pwr, def_index, vef_index, floors_index, key_stdfloors, key_basic_std, key_basic_spe, key_pa_std, key_pa_spe, final_floors_index, tolerances_index, prospection_exception
+	global max_index, min_index, effects_index, key_blank, key_pa, key_ra, key_pwr, def_index, vef_index, floors_index, key_stdfloors, key_basic_std, key_basic_spe, key_pa_std, key_pa_spe, final_floors_index, tolerances_index, prospection_exception, reliquat
 	adapted_objective := []
 	if(adapted)
 	{
@@ -693,7 +697,11 @@ ChooseRune(objective, adapted := true) ; funChooseRune
 	{
 		if(def = "Prospection")
 		{
-			if(vef_index[index] = 0 or prospection_exception)
+			if(reliquat > 9)
+			{
+				prospection_exception := false
+			}
+			else if((vef_index[index] = 0 and reliquat < 1) or prospection_exception)
 			{
 				temp_max_value := 0
 				if(max_index[index] >= min_index[index] + 2)
@@ -712,7 +720,9 @@ ChooseRune(objective, adapted := true) ; funChooseRune
 				else
 				{
 					if(!prospection_exception)
-					prospection_exception := true
+					{
+						prospection_exception := true
+					}
 					effect := def
 					max_value := temp_max_value
 					pwr_effect := effects_index[def][key_pwr]
@@ -802,13 +812,25 @@ ChooseRune(objective, adapted := true) ; funChooseRune
 		ra := effects_index[effect][key_ra]
 		pa := effects_index[effect][key_pa]
 		blank := effects_index[effect][key_blank]
+		floor_basic := 0
+		floor_pa := 0
+		if(max_value > floors_index[pwr_effect][key_stdfloors])
+		{
+			floor_basic := floors_index[pwr_effect][key_basic_spe]
+			floor_pa := floors_index[pwr_effect][key_pa_spe]
+		}
+		else
+		{
+			floor_basic := floors_index[pwr_effect][key_basic_std]
+			floor_pa := floors_index[pwr_effect][key_pa_std]
+		}
 		if(adapted)
 		{
 			if(ra != "" and ra <= max_delta_value)
 			{
 				value := ra
 			}
-			else if(pa != "" and pa <= max_delta_value)
+			else if(pa != "" and (pa < max_delta_value or (pa = max_delta_value and current_value + blank > floor_basic)))
 			{
 				value := pa
 			}
@@ -819,18 +841,6 @@ ChooseRune(objective, adapted := true) ; funChooseRune
 		}
 		else
 		{
-			floor_basic := 0
-			floor_pa := 0
-			if(max_value > floors_index[pwr_effect][key_stdfloors])
-			{
-				floor_basic := floors_index[pwr_effect][key_basic_spe]
-				floor_pa := floors_index[pwr_effect][key_pa_spe]
-			}
-			else
-			{
-				floor_basic := floors_index[pwr_effect][key_basic_std]
-				floor_pa := floors_index[pwr_effect][key_pa_std]
-			}
 			if(current_value + blank <= floor_basic and blank <= delta_value)
 			{
 				value := blank
