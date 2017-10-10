@@ -176,6 +176,7 @@ Recalibrate(new_item := false) ; funRecalibrate
 		min_index := StructureOcrResult(ApplyOCR(pic_min), min_index)
 		max_index := StructureOcrResult(ApplyOCR(pic_max), max_index)
 	}
+	Sleep, 500
 }
 
 ConvertToPx(delta_margin, ratio, reference, delta_ratio := 0, n_delta_ratio := 0) ; funConvertToPx
@@ -600,12 +601,14 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 			}
 			if value is not integer
 			{
-				MsgBox, fatal calculation _error
+				Recalibrate() ; subject to debate : if only CaptureLastAttemptHistory has failed, not necessary, but if CaptureLastAttemptHistory has failed, calculation may have failed too
+				ApplyAttemptChanges(attempt_value, attempt_effect)
 				return
 			}
 			if(effect = "")
 			{
-				MsgBox, fatal _error unknown effect
+				Recalibrate() ; subject to debate
+				ApplyAttemptChanges(attempt_value, attempt_effect)
 				return
 			}
 			else

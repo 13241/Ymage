@@ -2,8 +2,8 @@
 
 # résistance au lag :
 
-capture de la fenêtre du jeu "operation impossible"
-transormation des MsgBox "bug" en réinitialisation de l'état de l'objet
+capture de la fenêtre du jeu "operation impossible" (en conflit avec le lag serveur, à débattre)
+procédure /ping
 analyse du temps de réponse si le délais est dans la gamme originale, faire une moyenne et ajuster le max du délais aléatoire en fonction
 
 # affinement du comportement :
