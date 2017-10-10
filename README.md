@@ -1,8 +1,14 @@
 # Ymage
-et sinon aprÃ¨s Ã§a la partie la plus "difficile" c'est de gÃ©rer les constantes du genre pallier, tolÃ©rance (pour le fm)
-pour avoir qqch d'idÃ©al
-ensuite faudra insÃ©rer la gestion d'over et d'exo
-et pour les jets stats >60
-pouvoir faire la technique ra over + rÃ©duction avec des runes carac normales
-la pour l'instant il remet les runes du genre po pa pm etc en premier
-faut la possibilitÃ© de remettre en dernier
+
+# résistance au lag :
+
+capture de la fenêtre du jeu "operation impossible"
+réinitialisation partielle de l'état de l'objet et de certaines variables (ne pas réinitialiser : reliquat, ... )
+transormation des MsgBox "bug" en réinitialisation de l'état de l'objet
+retrait automatique de la rune lors de la capture des pixels (initialisation et réinitialisation)
+
+# affinement du comportement :
+
+ajout d'un objectif supplémentaire pour les over/exo
+en cas d'over, comportement de remise de rune à gros poids à retardement
+en cas de stats (poids 1) dans la zone 61-101, comportement d'over puis remise à la dizaine
