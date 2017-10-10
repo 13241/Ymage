@@ -76,6 +76,7 @@ Hotkey, !Numpad0, Termination, On
 Hotkey, !Numpad1, Calibrate, On
 Hotkey, !Numpad2, %testing%, On
 Hotkey, !Numpad3, MainRoutine, On
+Hotkey, !Numpad4, Recalibrate, On
 return
 
 ; functions
@@ -99,6 +100,7 @@ Termination() ; funTermination
 
 Calibrate() ; funCalibrate
 {
+	Sleep, 500
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index, def_index, rf_runes, rf_coordinates, rf_floors, rf_final_floors, pic_min, pic_max, pic_effect, hex_color_rune, hex_color_fusion, locations_index, key_x, key_y
 	SysGet, width_margin_w, 32 ; window resizable zone, horizontal size
 	SysGet, height_margin_w, 33 ; window resizable zone, vertical size
@@ -124,10 +126,17 @@ Calibrate() ; funCalibrate
 	ReadFile(rf_coordinates, "AddToLocations_Index")
 	ReadFile(rf_floors, "AddToFloors_Index")
 	ReadFile(rf_final_floors, "AddToFinalFloors_Tolerances_Index")
+	; readfile objectifs personnalises
 	
 	key_color_xy := "col_xy"
 	x_no_rune := ConvertToPx(x_5_4_s, locations_index[key_color_xy][key_x], width_5_4)
 	y_no_rune := ConvertToPx(y_5_4_s, locations_index[key_color_xy][key_y], height_5_4)
+	
+	SendInput {Ctrl Down}
+	SendInput {Click %x_no_rune% %y_no_rune% 2}
+	SendInput {Ctrl Up}
+	SendInput {Click 0 0 0}
+	
 	PixelGetColor, hex_color_rune, %x_no_rune%, %y_no_rune%
 	key_fus_xy := "fus_xy"
 	x_fus := ConvertToPx(x_5_4_s, locations_index[key_fus_xy][key_x], width_5_4)
@@ -143,6 +152,30 @@ Calibrate() ; funCalibrate
 	vef_index := StructureOcrResult(ApplyOCR(pic_effect), vef_index)
 	
 	def_index := ConvertToKnownEffects(def_index)
+}
+
+Recalibrate(new_item := false) ; funRecalibrate
+{
+	global reliquat, pic_min, pic_max, pic_effect, min_index, max_index, vef_index, def_index, prospection_exception
+	Sleep, 500
+	ReadFile(rf_floors, "AddToFloors_Index")
+	ReadFile(rf_final_floors, "AddToFinalFloors_Tolerances_Index")
+	; readfile objectifs personnalises
+	
+	CaptureImage(pic_effect)
+	vef_index := StructureOcrResult(ApplyOCR(pic_effect), vef_index)
+	def_index := ConvertToKnownEffects(def_index)
+	
+	prospection_exception := false
+	
+	if(new_item)
+	{
+		reliquat := 0
+		CaptureImage(pic_min)
+		CaptureImage(pic_max)
+		min_index := StructureOcrResult(ApplyOCR(pic_min), min_index)
+		max_index := StructureOcrResult(ApplyOCR(pic_max), max_index)
+	}
 }
 
 ConvertToPx(delta_margin, ratio, reference, delta_ratio := 0, n_delta_ratio := 0) ; funConvertToPx
@@ -927,6 +960,7 @@ UseRune(value, effect) ; funUseRune
 	if(i = 20)
 	{
 		SendInput {Enter} ; procedure /ping
+		Sleep, 100
 	}
 	
 	SendInput {Click %x_fus% %y_fus% 2}
@@ -944,6 +978,7 @@ UseRune(value, effect) ; funUseRune
 	if(j = 20)
 	{
 		SendInput {Enter} ; procedure /ping
+		Sleep, 100
 	}
 }
 

@@ -3,9 +3,8 @@
 # résistance au lag :
 
 capture de la fenêtre du jeu "operation impossible"
-réinitialisation partielle de l'état de l'objet et de certaines variables (ne pas réinitialiser : reliquat, ... )
 transormation des MsgBox "bug" en réinitialisation de l'état de l'objet
-retrait automatique de la rune lors de la capture des pixels (initialisation et réinitialisation)
+analyse du temps de réponse si le délais est dans la gamme originale, faire une moyenne et ajuster le max du délais aléatoire en fonction
 
 # affinement du comportement :
 
