@@ -66,11 +66,14 @@ min_index := []
 max_index := []
 vef_index := []
 def_index := []
+modif_max_index := []
+more_additional_index := []
 reliquat := 0
 prospection_exception := false
 last_history := ""
 last_used_reliquat := 0
 reliquat_exception := 1000
+more_reliquat_exception := []
 auto_bypass := true
 
 rf_runes := "runes.csv"
@@ -616,7 +619,7 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 
 ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 {
-	global reliquat, vef_index, def_index, min_index, max_index, last_used_reliquat
+	global reliquat, vef_index, def_index, min_index, max_index, last_used_reliquat, modif_max_index, more_additional_index, objectives_index, key_effects
 	lines_changes := CaptureLastAttemptHistory()
 	if(lines_changes.Length = 0)
 	{
@@ -680,13 +683,20 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 				if(i_ef_index)
 				{
 					vef_index[i_ef_index] := vef_index[i_ef_index] + value
-					if(max_index[i_ef_index] = 0 and vef_index[i_ef_index] = 0 and min_index[i_ef_index] = 0)
+					if(max_index[i_ef_index] = 0 and vef_index[i_ef_index] = 0 and min_index[i_ef_index] = 0 and modif_max_index[i_ef_index] = 0)
 					{
-						max_index.RemoveAt(i_ef_index)
-						min_index.RemoveAt(i_ef_index)
-						vef_index.RemoveAt(i_ef_index)
-						def_index.RemoveAt(i_ef_index)
-						; modif de modif_objective and additional_objective
+						if(!(objectives[key_effects].HasValue(effect)))
+						{
+							max_index.RemoveAt(i_ef_index)
+							min_index.RemoveAt(i_ef_index)
+							vef_index.RemoveAt(i_ef_index)
+							def_index.RemoveAt(i_ef_index)
+							modif_max_index.RemoveAt(i_ef_index)
+							For _priority, objective in more_additional_index
+							{
+								objective.RemoveAt([i_ef_index])
+							}
+						}
 					}
 				}
 				else
@@ -695,6 +705,11 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 					def_index.Push(effect)
 					min_index.Push(0)
 					max_index.Push(0)
+					modif_max_index.Push(0)
+					For _priority, objective in more_additional_index
+					{
+						objective[_priority].Push(0)
+					}
 				}
 			}
 		}
@@ -885,32 +900,29 @@ ChooseRune(objective, adapted := true, bypass := true) ; funChooseRune
 					minimal_delta := adapted_objective[index]
 				}
 			}
-			if(auto_bypass = true or ConvertToReliquat(minimal_delta, def) + reliquat > 0)
+			if(auto_bypass = true or ConvertToReliquat(minimal_delta, def) + reliquat >= 0)
 			{
 				if(minimal_delta <= adapted_objective[index] - vef_index[index])
 				{
 					if((effects_index[def][key_pwr] = pwr_effect and adapted_objective[index] - vef_index[index] > delta_value) or effects_index[def][key_pwr] > pwr_effect)
 					{
-						if(!(def = "Sagesse" and minimal_delta + vef_index[index] = max_index[index]))
+						effect := def
+						pwr_effect := effects_index[def][key_pwr]
+						delta_value := adapted_objective[index] - vef_index[index]
+						max_delta_value := max_index[index] - vef_index[index]
+						max_value := max_index[index]
+						current_value := vef_index[index]
+						if(max_delta_value < delta_value)
 						{
-							effect := def
-							pwr_effect := effects_index[def][key_pwr]
-							delta_value := adapted_objective[index] - vef_index[index]
-							max_delta_value := max_index[index] - vef_index[index]
-							max_value := max_index[index]
-							current_value := vef_index[index]
-							if(max_delta_value < delta_value)
+							std_delta_value := floors_index[pwr_effect][key_stdfloors] - vef_index[index]
+							if(delta_value < std_delta_value)
 							{
-								std_delta_value := floors_index[pwr_effect][key_stdfloors] - vef_index[index]
-								if(delta_value < std_delta_value)
-								{
-									max_delta_value := delta_value
-								}
-								else
-								{
-									delta_value := std_delta_value
-									max_delta_value := std_delta_value
-								}
+								max_delta_value := delta_value
+							}
+							else
+							{
+								delta_value := std_delta_value
+								max_delta_value := std_delta_value
 							}
 						}
 					}
@@ -974,17 +986,14 @@ ChooseRune(objective, adapted := true, bypass := true) ; funChooseRune
 	}
 }
 
-UseRune(value, effect) ; funUseRune
+UseRune(value, effect) ; funUseRune 
 {
-	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y, def_index, effects_index, key_blank, key_pa, key_ra, hex_color_rune, hex_color_fusion
+	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y, def_index, modif_max_index, effects_index, key_blank, key_pa, key_ra, key_rune, hex_color_rune, hex_color_fusion
+	x := 0
+	y := 0
 	y_index := HasValue(def_index, effect)
-	key_xy_s := "run_xy_s"
-	key_x_e := "run_x_e"
-	key_y_e := "run_y_e"
-	key_x_d := "run_x_d"
-	key_y_d := "run_y_d"
-	y := ConvertToPx(y_5_4_s, locations_index[key_xy_s][key_y], height_5_4, locations_index[key_y_d][key_y], y_index - 1)
 	x_index := 0
+	modifier := ""
 	if(effects_index[effect][key_blank] = value)
 	{
 		x_index := 1
@@ -992,17 +1001,50 @@ UseRune(value, effect) ; funUseRune
 	else if(effects_index[effect][key_pa] = value)
 	{
 		x_index := 2
+		modifier := key_pa
 	}
 	else if(effects_index[effect][key_ra] = value)
 	{
 		x_index := 3
+		modifier := key_ra
 	}
-	if(index = 0)
+	if(modif_max_index[y_index] = 0)
 	{
-		MsgBox, Fatal _error _no rune found
-		return
+		key_xy_search := "sea_xy"
+		x_search := ConvertToPx(x_5_4_s, locations_index[key_xy_search][key_x], width_5_4)
+		y_search := ConvertToPx(y_5_4_s, locations_index[key_xy_search][key_y], height_5_4)
+		key_xy_inventory := "inv_xy"
+		x := ConvertToPx(x_5_4_s, locations_index[key_xy_inventory][key_x], width_5_4)
+		y := ConvertToPx(y_5_4_s, locations_index[key_xy_inventory][key_y], height_5_4)
+		key_xy_inf := "inf_xy"
+		x_inf := ConvertToPx(x_5_4_s, locations_index[key_xy_inf][key_x], width_5_4)
+		y_inf := ConvertToPx(y_5_4_s, locations_index[key_xy_inf][key_y], height_5_4)
+		
+		SendInput {Click %x_inf% %y_inf%}
+		delay_ms := 0
+		Random, delay_ms, 750, 1250
+		SendInput {Click %x_search% %y_search% 3}
+		Sleep, 100
+		str_rune := effects_index[effect][key_rune]
+		SendInput {Raw}%key_rune% %modifier% %str_rune%
+		Random, delay_ms, 1000, 1500
+		Sleep, %delay_ms%
 	}
-	x := ConvertToPx(x_5_4_s, locations_index[key_xy_s][key_x], width_5_4, locations_index[key_x_d][key_x], x_index - 1)
+	else
+	{
+		key_xy_s := "run_xy_s"
+		key_x_e := "run_x_e"
+		key_y_e := "run_y_e"
+		key_x_d := "run_x_d"
+		key_y_d := "run_y_d"
+		y := ConvertToPx(y_5_4_s, locations_index[key_xy_s][key_y], height_5_4, locations_index[key_y_d][key_y], y_index - 1)
+		if(index = 0)
+		{
+			MsgBox, Fatal _error _no rune found
+			return
+		}
+		x := ConvertToPx(x_5_4_s, locations_index[key_xy_s][key_x], width_5_4, locations_index[key_x_d][key_x], x_index - 1)
+	}
 	
 	delay_ms := 0
 	SendInput {Click %x% %y% 2}
@@ -1051,45 +1093,49 @@ UseRune(value, effect) ; funUseRune
 	}
 }
 
-MainRoutine() ; funMainRoutine ;yolo à relire TRES consciencieusement
+CalibrateObjectives() ; funCalibrateObjectives
 {
-	global min_index, max_index, vef_index, def_index, reliquat, objectives_index, key_exception, key_effects, key_values, reliquat_exception
-	Sleep, 1000
-	;yolo ATTENTION : SI LE JET DE BASE A UN OVER, ET QUE CELUI-CI DISPARAIT, LES OBJECTIFS SPECIALISES NE SONT PAS MAJ
-	; modif max index doit etre global, more additional index doit etre global, et les deux doivent etre modifies lors de applyattemptchanges
-	modif_max_index := []
+	global def_index, objectives_index, max_index, min_index, vef_index, modif_max_index, more_additional_index, more_reliquat_exception, key_exception, key_effects, key_values
 	For c_index, c_effect in def_index
 	{
 		modif_max_index[c_index] := max_index[c_index]
 	}
-	more_reliquat_exception := []
 	more_reliquat_exception[1] := 1000
-	more_additional_index := []
-	if(objectives_index.Length() != 0)
+	For _priority, objective in objectives_index
 	{
-		For _priority, objective in objectives_index
+		more_reliquat_exception[_priority] := objective[key_exception]
+		more_additional_index[_priority] := []
+		For c_index, c_effect in def_index
 		{
-			more_reliquat_exception[_priority] := objective[key_exception]
-			more_additional_index[_priority] := []
-			For c_index, c_effect in def_index
+			more_additional_index[_priority][c_index] := max_index[c_index]
+		}
+		For m_index, m_effect in objective[key_effects]
+		{
+			d_index := HasValue(def_index, m_effect)
+			if(d_index != 0)
 			{
-				more_additional_index[_priority][c_index] := max_index[c_index]
+				modif_max_index[d_index] := objective[key_values][m_index]
+				more_additional_index[_priority][d_index] := objective[key_values][m_index]
 			}
-			For m_index, m_effect in objective[key_effects]
+			else
 			{
-				d_index := HasValue(def_index, m_effect)
-				if(d_index != 0)
-				{
-					modif_max_index[d_index] := objective[key_values][m_index]
-					more_additional_index[_priority][d_index] := objective[key_values][m_index]
-				}
-				else
-				{
-					more_additional_index[_priority].Push(objective[key_values][m_index])
-				}
+				more_additional_index[_priority].Push(objective[key_values][m_index])
+				def_index.Push(m_effect)
+				min_index.Push(0)
+				max_index.Push(0)
+				vef_index.Push(0)
+				modif_max_index.Push(0)
 			}
 		}
 	}
+}
+
+MainRoutine() ; funMainRoutine
+{
+	global min_index, max_index, vef_index, def_index, reliquat, objectives_index, key_exception, key_effects, key_values, reliquat_exception, more_reliquat_exception, modif_max_index, more_additional_index
+	Sleep, 1000
+	
+	CalibrateObjectives()
 	
 	finished := false
 	while(finished = false)
@@ -1119,23 +1165,31 @@ MainRoutine() ; funMainRoutine ;yolo à relire TRES consciencieusement
 						{
 							authorized_bypass := false
 						}
-						index_over_1 := HasValue(max_index, 0)
-						if(index_over_1 = 0 and objective.Length > def_index.Length())
+						index_over_1 := 0
+						For index_objective_effect, effect in objectives_index[_priority][key_effects]
 						{
-							index_over_1 := def_index.Length() + 1
+							index_def_effect := HasValue(def_index, effect)
+							if(index_def_effect = 0)
+							{
+								MsgBox, erreur effet d'objectif pas enregistre
+							}
+							else if(modif_max_index[index_def_effect] = 0 and objective[index_def_effect] > 0)
+							{
+								index_over_1 := index_def_effect
+							}
 						}
 						if(index_over_1 != 0)
 						{
 							k := 0
-							if(vef_index.HasKey(index_over_1))
+							if(vef_index[index_over_1] != 0)
 							{
 								k := vef_index[index_over_1]
 							}
-							if(reliquat + ConvertToReliquat(objective[index_over_1] - k) >= 0)
+							if(objective[index_over_1] >= k and reliquat + ConvertToReliquat(objective[index_over_1] - k, def_index[index_over_1]) >= 0)
 							{
 								ChooseRune(objective, false, false)
 							}
-							else if(objective[index_over_1] = vef_index[index_over_1])
+							else if(objective[index_over_1] = vef_index[index_over_1] or HasValue(objectives_index[_priority][key_effects], def_index[index_over_1]) = objectives_index[_priority][key_effects].Length())
 							{
 								ChooseRune(objective, false, true)
 							}
