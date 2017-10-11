@@ -57,17 +57,27 @@ key_ra_delta := ""
 final_floors_index := []
 tolerances_index := []
 
+objectives_index := []
+key_exception := ""
+key_effects := ""
+key_values := ""
+
 min_index := []
 max_index := []
 vef_index := []
 def_index := []
 reliquat := 0
 prospection_exception := false
+last_history := ""
+last_used_reliquat := 0
+reliquat_exception := 1000
+auto_bypass := true
 
 rf_runes := "runes.csv"
 rf_coordinates := "ratio_coordinates.csv"
 rf_floors := "palliers.csv"
 rf_final_floors := "finalisation.csv"
+rf_objectives := "objectifs.csv"
 pic_min := "min"
 pic_max := "max"
 pic_effect := "eff"
@@ -101,7 +111,7 @@ Termination() ; funTermination
 Calibrate() ; funCalibrate
 {
 	Sleep, 500
-	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index, def_index, rf_runes, rf_coordinates, rf_floors, rf_final_floors, pic_min, pic_max, pic_effect, hex_color_rune, hex_color_fusion, locations_index, key_x, key_y
+	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index, def_index, rf_runes, rf_coordinates, rf_floors, rf_final_floors, rf_objectives, pic_min, pic_max, pic_effect, hex_color_rune, hex_color_fusion, locations_index, key_x, key_y
 	SysGet, width_margin_w, 32 ; window resizable zone, horizontal size
 	SysGet, height_margin_w, 33 ; window resizable zone, vertical size
 	SysGet, border_w, 4 ; height of window title bar
@@ -126,7 +136,7 @@ Calibrate() ; funCalibrate
 	ReadFile(rf_coordinates, "AddToLocations_Index")
 	ReadFile(rf_floors, "AddToFloors_Index")
 	ReadFile(rf_final_floors, "AddToFinalFloors_Tolerances_Index")
-	; readfile objectifs personnalises
+	ReadFile(rf_objectives, "AddToObjectives_Index")
 	
 	key_color_xy := "col_xy"
 	x_no_rune := ConvertToPx(x_5_4_s, locations_index[key_color_xy][key_x], width_5_4)
@@ -156,17 +166,19 @@ Calibrate() ; funCalibrate
 
 Recalibrate(new_item := false) ; funRecalibrate
 {
-	global reliquat, pic_min, pic_max, pic_effect, min_index, max_index, vef_index, def_index, prospection_exception
+	global reliquat, pic_min, pic_max, pic_effect, min_index, max_index, vef_index, def_index, prospection_exception, rf_floors, rf_final_floors, rf_objectives, auto_bypass
 	Sleep, 500
 	ReadFile(rf_floors, "AddToFloors_Index")
 	ReadFile(rf_final_floors, "AddToFinalFloors_Tolerances_Index")
-	; readfile objectifs personnalises
+	ReadFile(rf_objectives, "AddToObjectives_Index")
 	
 	CaptureImage(pic_effect)
 	vef_index := StructureOcrResult(ApplyOCR(pic_effect), vef_index)
 	def_index := ConvertToKnownEffects(def_index)
 	
 	prospection_exception := false
+	auto_bypass := true
+	reliquat_exception := 1000
 	
 	if(new_item)
 	{
@@ -189,8 +201,7 @@ ReadFile(file_name, func_name) ; funReadFile
 	file := FileOpen(file_name, "r")
 	if(!IsObject(file))
 	{
-		HideTrayTip()
-		TrayTip, , Cant open the file : %file_name%
+		MsgBox, Cant open the file : %file_name%
 		return
 	}
 	while(file.AtEOF = 0)
@@ -206,7 +217,7 @@ AddToEffects_Index(line) ; funAddToEffects_Index
 	global effects_index, key_rune, key_blank, key_pa, key_ra, key_pwr
 	StringReplace, line, line, `r, , All
 	StringReplace, line, line, `n, , All
-	keys := StrSplit(line, ",")
+	keys := StrSplit(line, ";")
 	if(key_rune = "")
 	{
 		key_rune := keys[1]
@@ -226,12 +237,45 @@ AddToEffects_Index(line) ; funAddToEffects_Index
 	}
 }
 
+AddToObjectives_Index(line) ; funAddToObjectives_Index
+{
+	global objectives_index, key_effects, key_values, key_exception
+	StringReplace, line, line, `r, , All
+	StringReplace, line, line, `n, , All
+	keys := StrSplit(line, ";")
+	if(key_effects = "")
+	{
+		key_effects := keys[1]
+		key_values := keys[2]
+		key_exception := keys[4]
+	}
+	else
+	{
+		if(!(objectives_index.HasKey(keys[3])))
+		{
+			objectives_index[keys[3]] := {}
+		}
+		if(!IsObject(objectives_index[keys[3]][key_effects]) || !IsObject(objectives_index[keys[3]][key_values]))
+		{
+			objectives_index[keys[3]][key_effects] := []
+			objectives_index[keys[3]][key_values] := []
+		}
+		objectives_index[keys[3]][key_effects].Push(keys[1])
+		objectives_index[keys[3]][key_values].Push(keys[2])
+		if(keys[4] != "")
+		{
+			objectives_index[keys[3]][key_exception] := keys[4]
+		}
+	}
+	
+}
+
 AddToLocations_Index(line) ; funAddToLocations_Index
 {
 	global locations_index, key_x, key_y
 	StringReplace, line, line, `r, , All
 	StringReplace, line, line, `n, , All
-	keys := StrSplit(line, ",")
+	keys := StrSplit(line, ";")
 	if(key_x = "")
 	{
 		key_x := keys[2]
@@ -250,7 +294,7 @@ AddToFloors_Index(line) ; funAddToFloors_Index
 	global floors_index, key_stdfloors, key_basic_std, key_basic_spe, key_pa_std, key_pa_spe, key_pa_delta, key_ra_delta
 	StringReplace, line, line, `r, , All
 	StringReplace, line, line, `n, , All
-	keys := StrSplit(line, ",")
+	keys := StrSplit(line, ";")
 	if(key_stdfloors = "")
 	{
 		key_stdfloors := keys[2]
@@ -279,7 +323,7 @@ AddToFinalFloors_Tolerances_Index(line) ; funAddToFinalFloors_Tolerances_Index
 	global final_floors_index, tolerances_index
 	StringReplace, line, line, `r, , All
 	StringReplace, line, line, `n, , All
-	keys := StrSplit(line, ",")
+	keys := StrSplit(line, ";")
 	floor_value := keys[1]
 	if floor_value is integer
 	{
@@ -368,10 +412,9 @@ ApplyOCR(pic_name) ; funApplyOCR
 		
 		return ocr_result
 	}
-	else
+	IfWinNotExist, FreeOCR
 	{
-		HideTrayTip()
-		TrayTip, , FreeOCR app must be running
+		MsgBox, FreeOCR app must be running
 		return ""
 	}
 }
@@ -525,7 +568,7 @@ ConvertToKnownEffects(ocr_def_index) ; funConvertToKnownEffects
 
 CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 {
-	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y
+	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y, last_history
 	key_xy_s := "his_xy_s"
 	key_x_e := "his_x_e"
 	key_y_e := "his_y_e"
@@ -552,8 +595,18 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 	StringReplace, history_result, history_result, `n, %dot_comma% , All
 	StringReplace, history_result, history_result, %dot_comma%%dot_comma%, %dot_comma%, All
 	
-	cut_history_result := StrSplit(history_result, dot_comma)
 	last_line := []
+	
+	if(history_result = last_history)
+	{
+		return last_line
+	}
+	else
+	{
+		last_history := history_result
+	}
+	
+	cut_history_result := StrSplit(history_result, dot_comma)
 	For index, value in cut_history_result
 	{
 		last_line.InsertAt(1, value)
@@ -563,8 +616,14 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 
 ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 {
-	global reliquat, vef_index, def_index, min_index, max_index
+	global reliquat, vef_index, def_index, min_index, max_index, last_used_reliquat
 	lines_changes := CaptureLastAttemptHistory()
+	if(lines_changes.Length = 0)
+	{
+		; Recalibrate() ; subject to debate
+		ApplyAttemptChanges(attempt_value, attempt_effect)
+		return
+	}
 	line_changes := lines_changes[1]
 	changes := StrSplit(line_changes, ", ")
 	found_reliquat := false
@@ -601,13 +660,13 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 			}
 			if value is not integer
 			{
-				Recalibrate() ; subject to debate : if only CaptureLastAttemptHistory has failed, not necessary, but if CaptureLastAttemptHistory has failed, calculation may have failed too
+				; Recalibrate() ; subject to debate : if only CaptureLastAttemptHistory has failed, not necessary, but if CaptureLastAttemptHistory has failed, calculation may have failed too
 				ApplyAttemptChanges(attempt_value, attempt_effect)
 				return
 			}
 			if(effect = "")
 			{
-				Recalibrate() ; subject to debate
+				; Recalibrate() ; subject to debate
 				ApplyAttemptChanges(attempt_value, attempt_effect)
 				return
 			}
@@ -627,6 +686,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 						min_index.RemoveAt(i_ef_index)
 						vef_index.RemoveAt(i_ef_index)
 						def_index.RemoveAt(i_ef_index)
+						; modif de modif_objective and additional_objective
 					}
 				}
 				else
@@ -643,6 +703,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 	{
 		reliquat := reliquat + tampon_reliquat
 	}
+	last_used_reliquat := ConvertToReliquat(attempt_value, attempt_effect)
 }
 
 ConvertToReliquat(value, effect) ; funConvertToReliquat
@@ -706,14 +767,17 @@ HasValue(haystack, needle) ; funHasValue
 	}
 }
 
-; objective may be substracted by the adequate tolerance value, the function will try to do better than this adapted objective, while 
-; staying below the max value of the item (unless the objective is above the max value, in this case it will never do better than the 
-; objective
-; a changer : selection de l'effet : il doit anticiper qu'il ne pourra pas monter le jet plus haut lors de la selection de l'effet
-; il doit s'en foutre de la prospection (entre autres)
-ChooseRune(objective, adapted := true) ; funChooseRune
+ChooseRune(objective, adapted := true, bypass := true) ; funChooseRune
 {
-	global max_index, min_index, effects_index, key_blank, key_pa, key_ra, key_pwr, def_index, vef_index, floors_index, key_stdfloors, key_basic_std, key_basic_spe, key_pa_std, key_pa_spe, final_floors_index, tolerances_index, prospection_exception, reliquat
+	global max_index, min_index, effects_index, key_blank, key_pa, key_ra, key_pwr, def_index, vef_index, floors_index, key_stdfloors, key_basic_std, key_basic_spe, key_pa_std, key_pa_spe, final_floors_index, tolerances_index, prospection_exception, reliquat, reliquat_exception, last_used_reliquat, auto_bypass
+	if(bypass = true || reliquat + last_used_reliquat < 0)
+	{
+		auto_bypass := true
+	}
+	else if(reliquat >= reliquat_exception)
+	{
+		auto_bypass := false
+	}
 	adapted_objective := []
 	if(adapted)
 	{
@@ -746,7 +810,7 @@ ChooseRune(objective, adapted := true) ; funChooseRune
 	{
 		if(def = "Prospection")
 		{
-			if(reliquat > 9)
+			if(reliquat > 9 || auto_bypass = false)
 			{
 				prospection_exception := false
 			}
@@ -821,29 +885,32 @@ ChooseRune(objective, adapted := true) ; funChooseRune
 					minimal_delta := adapted_objective[index]
 				}
 			}
-			if(minimal_delta <= adapted_objective[index] - vef_index[index])
+			if(auto_bypass = true or ConvertToReliquat(minimal_delta, def) + reliquat > 0)
 			{
-				if((effects_index[def][key_pwr] = pwr_effect and adapted_objective[index] - vef_index[index] > delta_value) or effects_index[def][key_pwr] > pwr_effect)
+				if(minimal_delta <= adapted_objective[index] - vef_index[index])
 				{
-					if(!(def = "Sagesse" and minimal_delta + vef_index[index] = max_index[index]))
+					if((effects_index[def][key_pwr] = pwr_effect and adapted_objective[index] - vef_index[index] > delta_value) or effects_index[def][key_pwr] > pwr_effect)
 					{
-						effect := def
-						pwr_effect := effects_index[def][key_pwr]
-						delta_value := adapted_objective[index] - vef_index[index]
-						max_delta_value := max_index[index] - vef_index[index]
-						max_value := max_index[index]
-						current_value := vef_index[index]
-						if(max_delta_value < delta_value)
+						if(!(def = "Sagesse" and minimal_delta + vef_index[index] = max_index[index]))
 						{
-							std_delta_value := floors_index[pwr_effect][key_stdfloors] - vef_index[index]
-							if(delta_value < std_delta_value)
+							effect := def
+							pwr_effect := effects_index[def][key_pwr]
+							delta_value := adapted_objective[index] - vef_index[index]
+							max_delta_value := max_index[index] - vef_index[index]
+							max_value := max_index[index]
+							current_value := vef_index[index]
+							if(max_delta_value < delta_value)
 							{
-								max_delta_value := delta_value
-							}
-							else
-							{
-								delta_value := std_delta_value
-								max_delta_value := std_delta_value
+								std_delta_value := floors_index[pwr_effect][key_stdfloors] - vef_index[index]
+								if(delta_value < std_delta_value)
+								{
+									max_delta_value := delta_value
+								}
+								else
+								{
+									delta_value := std_delta_value
+									max_delta_value := std_delta_value
+								}
 							}
 						}
 					}
@@ -907,7 +974,6 @@ ChooseRune(objective, adapted := true) ; funChooseRune
 	}
 }
 
-; a changer, trouver une methode pour attendre suffisamment mais pas trop (placement de rune et collecte d'informations)
 UseRune(value, effect) ; funUseRune
 {
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y, def_index, effects_index, key_blank, key_pa, key_ra, hex_color_rune, hex_color_fusion
@@ -985,20 +1051,97 @@ UseRune(value, effect) ; funUseRune
 	}
 }
 
-MainRoutine() ; funMainRoutine
+MainRoutine() ; funMainRoutine ;yolo à relire TRES consciencieusement
 {
-	global min_index, max_index, reliquat
+	global min_index, max_index, vef_index, def_index, reliquat, objectives_index, key_exception, key_effects, key_values, reliquat_exception
 	Sleep, 1000
+	;yolo ATTENTION : SI LE JET DE BASE A UN OVER, ET QUE CELUI-CI DISPARAIT, LES OBJECTIFS SPECIALISES NE SONT PAS MAJ
+	; modif max index doit etre global, more additional index doit etre global, et les deux doivent etre modifies lors de applyattemptchanges
+	modif_max_index := []
+	For c_index, c_effect in def_index
+	{
+		modif_max_index[c_index] := max_index[c_index]
+	}
+	more_reliquat_exception := []
+	more_reliquat_exception[1] := 1000
+	more_additional_index := []
+	if(objectives_index.Length() != 0)
+	{
+		For _priority, objective in objectives_index
+		{
+			more_reliquat_exception[_priority] := objective[key_exception]
+			more_additional_index[_priority] := []
+			For c_index, c_effect in def_index
+			{
+				more_additional_index[_priority][c_index] := max_index[c_index]
+			}
+			For m_index, m_effect in objective[key_effects]
+			{
+				d_index := HasValue(def_index, m_effect)
+				if(d_index != 0)
+				{
+					modif_max_index[d_index] := objective[key_values][m_index]
+					more_additional_index[_priority][d_index] := objective[key_values][m_index]
+				}
+				else
+				{
+					more_additional_index[_priority].Push(objective[key_values][m_index])
+				}
+			}
+		}
+	}
+	
 	finished := false
 	while(finished = false)
 	{
+		reliquat_exception := 1000
 		rune := ChooseRune(min_index)
 		if(rune[1] = 0)
 		{
-			rune := ChooseRune(max_index)
+			reliquat_exception := more_reliquat_exception[1]
+			authorized_bypass := true
+			if(reliquat_exception != 1000)
+			{
+				authorized_bypass := false
+			}
+			rune := ChooseRune(modif_max_index, true, authorized_bypass)
 			if(rune[1] = 0)
 			{
-				rune := ChooseRune(max_index, false)
+				reliquat_exception := more_reliquat_exception[1]
+				rune := ChooseRune(modif_max_index, false, authorized_bypass)
+				if(rune[1] = 0)
+				{
+					For _priority, objective in more_additional_index
+					{
+						reliquat_exception := more_reliquat_exception[_priority]
+						authorized_bypass := true
+						if(reliquat_exception != 1000)
+						{
+							authorized_bypass := false
+						}
+						index_over_1 := HasValue(max_index, 0)
+						if(index_over_1 = 0 and objective.Length > def_index.Length())
+						{
+							index_over_1 := def_index.Length() + 1
+						}
+						if(index_over_1 != 0)
+						{
+							k := 0
+							if(vef_index.HasKey(index_over_1))
+							{
+								k := vef_index[index_over_1]
+							}
+							if(reliquat + ConvertToReliquat(objective[index_over_1] - k) >= 0)
+							{
+								ChooseRune(objective, false, false)
+							}
+							else if(objective[index_over_1] = vef_index[index_over_1])
+							{
+								ChooseRune(objective, false, true)
+							}
+						}
+					}
+				}
 			}
 		}
 		if(!(rune[1] = 0))

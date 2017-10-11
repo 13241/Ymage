@@ -1,53 +1,53 @@
-Rune,effet,basic,Pa,Ra,poids
-Age,Agilité,1,3,10,1
-Cha,Chance,1,3,10,1
-Fo,Force,1,3,10,1
-Ine,Intelligence,1,3,10,1
-Ini,Initiative,10,30,100,0.1
-Pod,Pods,10,30,100,0.25
-Vi,Vitalité,5,15,50,0.2
-de chasse,Arme de chasse,,,,5
-Pi Per,Puissance (pièges),1,3,10,2
-Prospe,Prospection,1,3,,3
-Pui,Puissance,1,3,10,2
-Sa,Sagesse,1,3,10,3
-Ré Air,Résistance Air,1,,,2
-Ré Cri,Résistance Critiques,1,3,,2
-Ré Eau,Résistance Eau,1,,,2
-Ré Feu,Résistance Feu,1,,,2
-Ré Neutre,Résistance Neutre,1,,,2
-Ré Pou,Résistance Poussée,1,3,,2
-Ré Terre,Résistance Terre,1,,,2
-Do Air,Dommages Air,1,3,,5
-Do Cri,Dommages Critiques,1,3,,5
-Do Eau,Dommages Eau,1,3,,5
-Do Feu,Dommages Feu,1,3,,5
-Do Neutre,Dommages Neutre,1,3,,5
-Do Pou,Dommages Poussée,1,3,,5
-Do Ren,Renvoie ! dommages,1,,,10
-Do Terre,Dommages Terre,1,3,,5
-Pi,Dommages Pièges,1,3,,5
-Do,Dommages,1,,,20
-Do Per Ar,% Dommages d'armes,1,,,15
-Do Per Di,% Dommages distance,1,,,15
-Do Per Mé,% Dommages mêlée,1,,,15
-Do Per So,% Dommages aux sorts,1,,,15
-Ré Per Di,% Résistance distance,1,,,15
-Ré Per Mé,% Résistance mêlée,1,,,15
-Fui,Fuite,1,3,,4
-Tac,Tacle,1,3,,4
-Ret Pa,Retrait PA,1,3,,7
-Ret Pme,Retrait PM,1,3,,7
-Ré Pa,Esquive PA,1,3,,7
-Ré Pme,Esquive PM,1,3,,7
-Ré Per Air,% Résistance Air,1,,,6
-Ré Per Eau,% Résistance Eau,1,,,6
-Ré Per Feu,% Résistance Feu,1,,,6
-Ré Per Neutre,% Résistance Neutre,1,,,6
-Ré Per Terre,% Résistance Terre,1,,,6
-Cri,% Critique,1,,,10
-So,Soins,1,,,10
-Invo,Invocations,1,,,30
-Po,Portée,1,,,51
-Ga Pme,PM,1,,,90
-Ga Pa,PA,1,,,100
+Rune;effet;basic;Pa;Ra;poids
+Age;Agilité;1;3;10;1
+Cha;Chance;1;3;10;1
+Fo;Force;1;3;10;1
+Ine;Intelligence;1;3;10;1
+Ini;Initiative;10;30;100;0.1
+Pod;Pods;10;30;100;0.25
+Vi;Vitalité;5;15;50;0.2
+de chasse;Arme de chasse;;;;5
+Pi Per;Puissance (pièges);1;3;10;2
+Prospe;Prospection;1;3;;3
+Pui;Puissance;1;3;10;2
+Sa;Sagesse;1;3;10;3
+Ré Air;Résistance Air;1;;;2
+Ré Cri;Résistance Critiques;1;3;;2
+Ré Eau;Résistance Eau;1;;;2
+Ré Feu;Résistance Feu;1;;;2
+Ré Neutre;Résistance Neutre;1;;;2
+Ré Pou;Résistance Poussée;1;3;;2
+Ré Terre;Résistance Terre;1;;;2
+Do Air;Dommages Air;1;3;;5
+Do Cri;Dommages Critiques;1;3;;5
+Do Eau;Dommages Eau;1;3;;5
+Do Feu;Dommages Feu;1;3;;5
+Do Neutre;Dommages Neutre;1;3;;5
+Do Pou;Dommages Poussée;1;3;;5
+Do Ren;Renvoie ! dommages;1;;;10
+Do Terre;Dommages Terre;1;3;;5
+Pi;Dommages Pièges;1;3;;5
+Do;Dommages;1;;;20
+Do Per Ar;% Dommages d'armes;1;;;15
+Do Per Di;% Dommages distance;1;;;15
+Do Per Mé;% Dommages mêlée;1;;;15
+Do Per So;% Dommages aux sorts;1;;;15
+Ré Per Di;% Résistance distance;1;;;15
+Ré Per Mé;% Résistance mêlée;1;;;15
+Fui;Fuite;1;3;;4
+Tac;Tacle;1;3;;4
+Ret Pa;Retrait PA;1;3;;7
+Ret Pme;Retrait PM;1;3;;7
+Ré Pa;Esquive PA;1;3;;7
+Ré Pme;Esquive PM;1;3;;7
+Ré Per Air;% Résistance Air;1;;;6
+Ré Per Eau;% Résistance Eau;1;;;6
+Ré Per Feu;% Résistance Feu;1;;;6
+Ré Per Neutre;% Résistance Neutre;1;;;6
+Ré Per Terre;% Résistance Terre;1;;;6
+Cri;% Critique;1;;;10
+So;Soins;1;;;10
+Invo;Invocations;1;;;30
+Po;Portée;1;;;51
+Ga Pme;PM;1;;;90
+Ga Pa;PA;1;;;100
