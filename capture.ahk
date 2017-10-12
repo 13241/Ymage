@@ -239,7 +239,7 @@ AddToEffects_Index(line) ; funAddToEffects_Index
 
 AddToInstructions_Index(line) ; funAddToInstructions_Index
 {
-	global instructions_index, key_effects, key_values
+	global instructions_index, key_effects, key_values, reliquat_exception
 	StringReplace, line, line, `r, , All
 	StringReplace, line, line, `n, , All
 	keys := StrSplit(line, ";")
@@ -821,8 +821,6 @@ ChooseRune(objective, adapted := true, bypass := true) ; funChooseRune
 	}
 	else if(reliquat >= reliquat_exception)
 	{
-		test_msgbox := GetNeededReliquat(objective)
-		MsgBox, reliquat %reliquat% needed_reliquat %test_msgbox%
 		auto_bypass := false
 	}
 	adapted_objective := []
@@ -1178,7 +1176,7 @@ CalibrateInstructions() ; funCalibrateInstructions
 
 MainRoutine() ; funMainRoutine
 {
-	global min_index, max_index, vef_index, def_index, reliquat, instructions_index, key_effects, key_values, reliquat_exception, modif_max_index, more_additional_index
+	global min_index, max_index, vef_index, def_index, reliquat, instructions_index, key_effects, key_values, modif_max_index, more_additional_index, auto_bypass
 	Sleep, 1000
 	
 	CalibrateInstructions()
@@ -1225,6 +1223,7 @@ MainRoutine() ; funMainRoutine
 						{
 							if(objective[index_over_1] > vef_index[index_over_1] and (reliquat + ConvertToReliquat(objective[index_over_1], def_index[index_over_1], 0) - ConvertToReliquat(vef_index[index_over_1], def_index[index_over_1], 0) >= 0))
 							{
+								auto_bypass := false
 								rune := ChooseRune(objective, false, false)
 							}
 							else if(objective[index_over_1] = vef_index[index_over_1] or (HasValue(instructions_index[_priority][key_effects], def_index[index_over_1]) = instructions_index[_priority][key_effects].Length() and objective[index_over_1] = 1))
