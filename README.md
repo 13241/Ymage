@@ -36,10 +36,10 @@ ajout d'un objectif supplémentaire pour les over/exo
 
 # PROBLEMES
 
-recup pas la prospection une fois reliquat ok ? probleme bypass?
+possibilité d'erreur de lecture de l'historique encore présente (cause ? => fenêtre d'opération impossible + lag => capture de cette fenêtre)
 
 check si pas de HASVALUE ou HASKEY inutile (pcq tous les arrays ont toutes les definitions mtn, pas avant)
 
-creer un système de detection immediate pour selectionner une rune dans l'inventaire => capt couleur (sys 3 interrupteurs)
+creer un système de detection immediate pour selectionner une rune dans l'inventaire
 
-Recalibrate()(voir s'il ne faut pas ajouter des valeurs de reliquat...), pas faire applyatemptchange apres? calculer le reliquat? ???
+Recalibrate()(voir s'il ne faut pas ajouter des valeurs de reliquat...)

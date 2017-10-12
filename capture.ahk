@@ -68,7 +68,6 @@ more_additional_index := []
 reliquat := 0
 prospection_exception := false
 last_history := ""
-last_used_reliquat := 0
 reliquat_exception := 1000
 auto_bypass := true
 
@@ -612,7 +611,7 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 
 ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 {
-	global reliquat, vef_index, def_index, min_index, max_index, last_used_reliquat, modif_max_index, more_additional_index, instructions_index, key_effects
+	global reliquat, vef_index, def_index, min_index, max_index, modif_max_index, more_additional_index, instructions_index, key_effects
 	lines_changes := CaptureLastAttemptHistory()
 	if(lines_changes.Length = 0)
 	{
@@ -632,7 +631,15 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 		}
 		else if(InStr(change, "reliquat"))
 		{
-			tampon_reliquat := tampon_reliquat + ConvertToReliquat(attempt_value, attempt_effect)
+			index_attempt := HasValue(def_index, attempt_effect)
+			if(index_attempt != 0)
+			{
+				tampon_reliquat := tampon_reliquat + ConvertToReliquat(attempt_value, attempt_effect, vef_index[index_attempt])
+			}
+			else
+			{
+				tampon_reliquat := tampon_reliquat + ConvertToReliquat(attempt_value, attempt_effect, 0)
+			}
 			found_reliquat := true
 		}
 		else
@@ -668,11 +675,18 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 			}
 			else
 			{
+				i_ef_index := HasValue(def_index, effect)
 				if(InStr(change, "-"))
 				{
-					tampon_reliquat := tampon_reliquat + ConvertToReliquat(value, effect)
+					if(i_ef_index != 0)
+					{
+						tampon_reliquat := tampon_reliquat + ConvertToReliquat(value, effect, vef_index[i_ef_index])
+					}
+					else
+					{
+						tampon_reliquat := tampon_reliquat + ConvertToReliquat(value, effect, 0)
+					}
 				}
-				i_ef_index := HasValue(def_index, effect)
 				if(i_ef_index)
 				{
 					vef_index[i_ef_index] := vef_index[i_ef_index] + value
@@ -711,40 +725,33 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 	{
 		reliquat := reliquat + tampon_reliquat
 	}
-	last_used_reliquat := ConvertToReliquat(attempt_value, attempt_effect)
 }
 
-ConvertToReliquat(value, effect) ; funConvertToReliquat
+ConvertToReliquat(value, effect, reference) ; funConvertToReliquat
 {
-	global effects_index, vef_index, def_index, key_pwr
-	i := HasValue(def_index, effect)
+	global effects_index, key_pwr
 	eff_reliquat := 0
-	vef := 0
-	if(i)
-	{
-		vef := vef_index[i]
-	}
 	if(effects_index.HasKey(effect))
 	{
-		if(vef < -1)
+		if(reference < -1)
 		{
-			if(vef + value <= -1)
+			if(reference + value <= -1)
 			{
 				eff_reliquat := -1 * effects_index[effect][key_pwr] * value / 2
 			}
 			else
 			{
-				pos_value := value + vef + 1
-				neg_value := -1 * (vef + 1)
+				pos_value := value + reference + 1
+				neg_value := -1 * (reference + 1)
 				eff_reliquat := -1 * effects_index[effect][key_pwr] * (neg_value / 2 + pos_value)
 			}
 		}
 		else
 		{
-			if(vef + value < -1)
+			if(reference + value < -1)
 			{
-				pos_value := -1 * (vef + 1)
-				neg_value := value + vef + 1
+				pos_value := -1 * (reference + 1)
+				neg_value := value + reference + 1
 				eff_reliquat := -1 * effects_index[effect][key_pwr] * (neg_value / 2 + pos_value)
 			}
 			else
@@ -756,17 +763,34 @@ ConvertToReliquat(value, effect) ; funConvertToReliquat
 	return eff_reliquat
 }
 
-GetNeededReliquat(objective); funGetNeededReliquat
+GetNeededReliquat(objective) ; funGetNeededReliquat
 {
-	global vef_index, def_index
+	global vef_index, def_index, effects_index, key_pwr
 	current_reliquat := 0
 	final_reliquat := 0
 	For index, value in objective
 	{
-		current_reliquat := current_reliquat + ConvertToReliquat(vef_index[index], def_index[index])
-		final_reliquat := final_reliquat + ConvertToReliquat(value, def_index[index])
+		if(def_index[index] != "Prospection" and effects_index[def_index[index]][key_pwr] < reliquat)
+		{
+			current_reliquat := current_reliquat + ConvertToReliquat(vef_index[index], def_index[index], 0)
+			final_reliquat := final_reliquat + ConvertToReliquat(value, def_index[index], 0)
+		}
 	}
 	return final_reliquat - current_reliquat
+}
+
+GetCurrentOverPwr() ; funGetCurrentOverPwr
+{
+	global vef_index, def_index, max_index, effects_index, key_pwr
+	current_over_pwr := 0
+	For index, value in vef_index
+	{
+		if(vef_index[index] > max_index[index])
+		{
+			current_over_pwr := current_over_pwr + ConvertToReliquat(vef_index[index], def_index[index], 0) - ConvertToReliquat(max_index[index], def_index[index], 0)
+		}
+	}
+	return current_over_pwr
 }
 
 HasValue(haystack, needle) ; funHasValue
@@ -790,13 +814,15 @@ HasValue(haystack, needle) ; funHasValue
 
 ChooseRune(objective, adapted := true, bypass := true) ; funChooseRune
 {
-	global max_index, min_index, effects_index, key_blank, key_pa, key_ra, key_pwr, def_index, vef_index, floors_index, key_stdfloors, key_basic_std, key_basic_spe, key_pa_std, key_pa_spe, final_floors_index, tolerances_index, prospection_exception, reliquat, reliquat_exception, last_used_reliquat, auto_bypass
+	global max_index, min_index, effects_index, key_blank, key_pa, key_ra, key_pwr, def_index, vef_index, floors_index, key_stdfloors, key_basic_std, key_basic_spe, key_pa_std, key_pa_spe, final_floors_index, tolerances_index, prospection_exception, reliquat, reliquat_exception, auto_bypass
 	if(bypass = true)
 	{
 		auto_bypass := true
 	}
 	else if(reliquat >= reliquat_exception)
 	{
+		test_msgbox := GetNeededReliquat(objective)
+		MsgBox, reliquat %reliquat% needed_reliquat %test_msgbox%
 		auto_bypass := false
 	}
 	adapted_objective := []
@@ -911,7 +937,7 @@ ChooseRune(objective, adapted := true, bypass := true) ; funChooseRune
 					minimal_delta := adapted_objective[index]
 				}
 			}
-			if(auto_bypass = true or ConvertToReliquat(minimal_delta, def) + reliquat >= 0)
+			if(auto_bypass = true or ConvertToReliquat(minimal_delta, def, vef_index[index]) + reliquat >= 0)
 			{
 				if(minimal_delta <= adapted_objective[index] - vef_index[index])
 				{
@@ -993,9 +1019,13 @@ ChooseRune(objective, adapted := true, bypass := true) ; funChooseRune
 				value := ra
 			}
 		}
-		if(auto_bypass = false and reliquat + ConvertToReliquat(value, effect) < 0)
+		if(effect != "" and auto_bypass = false and reliquat + ConvertToReliquat(value, effect, current_value) < 0)
 		{
 			return ChooseRune(objective, adapted, true)
+		}
+		else if(effect != "" and current_value + value > max_value and (GetCurrentOverPwr() + ConvertToReliquat(current_value + value, effect, 0) - ConvertToReliquat(max_value, effect, 0) < -101 or ConvertToReliquat(current_value + value, effect, 0) < -101))
+		{
+			return [0, ""]
 		}
 		return [value, effect]
 	}
@@ -1133,7 +1163,7 @@ CalibrateInstructions() ; funCalibrateInstructions
 				}
 				more_additional_index[_priority][d_index] := instruction[key_values][m_index]
 			}
-			else if(d_index = 0)
+			else
 			{
 				more_additional_index[_priority].Push(instruction[key_values][m_index])
 				def_index.Push(m_effect)
@@ -1177,11 +1207,6 @@ MainRoutine() ; funMainRoutine
 				{
 					For _priority, objective in more_additional_index
 					{
-						authorized_bypass := true
-						if(GetNeededReliquat(objective) + reliquat >= 0)
-						{
-							authorized_bypass := false
-						}
 						index_over_1 := 0
 						For index_instructions_effect, effect in instructions_index[_priority][key_effects]
 						{
@@ -1198,13 +1223,21 @@ MainRoutine() ; funMainRoutine
 						}
 						if(index_over_1 != 0)
 						{
-							if(objective[index_over_1] > vef_index[index_over_1] and (reliquat + ConvertToReliquat((objective[index_over_1] - vef_index[index_over_1]), def_index[index_over_1])) >= 0)
+							if(objective[index_over_1] > vef_index[index_over_1] and (reliquat + ConvertToReliquat(objective[index_over_1], def_index[index_over_1], 0) - ConvertToReliquat(vef_index[index_over_1], def_index[index_over_1], 0) >= 0))
 							{
 								rune := ChooseRune(objective, false, false)
 							}
 							else if(objective[index_over_1] = vef_index[index_over_1] or (HasValue(instructions_index[_priority][key_effects], def_index[index_over_1]) = instructions_index[_priority][key_effects].Length() and objective[index_over_1] = 1))
 							{
-								rune := ChooseRune(objective, false, true)
+								rune := ChooseRune(modif_max_index, false, true)
+								if(rune[1] = 0)
+								{
+									rune := ChooseRune(objective, false, true)
+								}
+							}
+							if(rune[1] != 0)
+							{
+								break
 							}
 						}
 					}

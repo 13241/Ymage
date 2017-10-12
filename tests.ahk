@@ -26,7 +26,7 @@ TestApplyAttemptChanges() ; funTestApplyAttemptChanges()
 
 TestRfs() ; funTestRfs
 {
-	global effects_index, locations_index, floors_index, final_floors_index, tolerances_index, max_index, min_index, vef_index, def_index, objectives_index, modif_max_index
+	global effects_index, locations_index, floors_index, final_floors_index, tolerances_index, max_index, min_index, vef_index, def_index, instructions_index, modif_max_index
 	testvar1 := ""
 	; For index, effect in objectives_index
 	; {
@@ -47,7 +47,7 @@ TestRfs() ; funTestRfs
 			; }
 		; }
 	; }
-	CalibrateObjectives()
+	CalibrateInstructions()
 	For index, final_floors in def_index
 	{
 		testvar1 := testvar1 . "///" . final_floors . "___" . vef_index[index] . "___" . min_index[index] . "___" . max_index[index] . "___" . modif_max_index[index]
