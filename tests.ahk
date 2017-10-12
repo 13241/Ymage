@@ -26,30 +26,31 @@ TestApplyAttemptChanges() ; funTestApplyAttemptChanges()
 
 TestRfs() ; funTestRfs
 {
-	global effects_index, locations_index, floors_index, final_floors_index, tolerances_index, max_index, min_index, vef_index, def_index, objectives_index
+	global effects_index, locations_index, floors_index, final_floors_index, tolerances_index, max_index, min_index, vef_index, def_index, objectives_index, modif_max_index
 	testvar1 := ""
-	For index, effect in objectives_index
-	{
-		testvar1 := testvar1 . "///" . index
-		For key, value in effect
-		{
-			if(IsOBject(value))
-			{
-				testvar1 := testvar1 . "---" . key
-				For subkey, subvalue in value
-				{
-					testvar1 := testvar1 . "___" . subvalue
-				}
-			}
-			else
-			{
-				testvar1 := testvar1 . "---" . key . "___" . value
-			}
-		}
-	}
-	; For index, final_floors in def_index
+	; For index, effect in objectives_index
 	; {
-		; testvar1 := testvar1 . "///" . final_floors . "___" . vef_index[index] . "___" . min_index[index] . "___" . max_index[index]
+		; testvar1 := testvar1 . "///" . index
+		; For key, value in effect
+		; {
+			; if(IsOBject(value))
+			; {
+				; testvar1 := testvar1 . "---" . key
+				; For subkey, subvalue in value
+				; {
+					; testvar1 := testvar1 . "___" . subvalue
+				; }
+			; }
+			; else
+			; {
+				; testvar1 := testvar1 . "---" . key . "___" . value
+			; }
+		; }
 	; }
+	CalibrateObjectives()
+	For index, final_floors in def_index
+	{
+		testvar1 := testvar1 . "///" . final_floors . "___" . vef_index[index] . "___" . min_index[index] . "___" . max_index[index] . "___" . modif_max_index[index]
+	}
 	MsgBox, %testvar1%
 }
