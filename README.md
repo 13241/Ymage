@@ -26,17 +26,13 @@ statistiques de taux de réussite des runes
 
 # en test : 
 
-vérification de l'historique précédent, si identique, recapturer => encore possibilites de bugs (p-e pas avec recalibrate)
-
-en cas d'over, comportement de remise de rune à gros poids à retardement
-
-ajout d'un objectif supplémentaire pour les over/exo
+vérification de l'historique précédent, si identique, recapturer => encore possibilites de bugs (avec recalibrate on perd la precision sur le reliquat... => methode pour le retrouver)
 
 
 
 # PROBLEMES
 
-possibilité d'erreur de lecture de l'historique encore présente (cause ? => fenêtre d'opération impossible + lag => capture de cette fenêtre)
+possibilité d'erreur de lecture de l'historique encore présente (cause ? => fenêtre d'opération impossible + lag => capture de cette fenêtre) + autre raison (non identifie)
 
 check si pas de HASVALUE ou HASKEY inutile (pcq tous les arrays ont toutes les definitions mtn, pas avant)
 

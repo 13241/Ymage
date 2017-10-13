@@ -609,14 +609,14 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 	return last_line
 }
 
-ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
+ApplyAttemptChanges(attempt_value, attempt_effect, adjust_values := true) ; funApplyAttemptChanges
 {
 	global reliquat, vef_index, def_index, min_index, max_index, modif_max_index, more_additional_index, instructions_index, key_effects
 	lines_changes := CaptureLastAttemptHistory()
-	if(lines_changes.Length = 0)
+	if(lines_changes.Length() = 0)
 	{
-		Recalibrate() ; subject to debate
-		ApplyAttemptChanges(attempt_value, attempt_effect)
+		Recalibrate()
+		ApplyAttemptChanges(attempt_value, attempt_effect, false)
 		return
 	}
 	line_changes := lines_changes[1]
@@ -663,14 +663,14 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 			}
 			if value is not integer
 			{
-				Recalibrate() ; subject to debate : if only CaptureLastAttemptHistory has failed, not necessary, but if CaptureLastAttemptHistory has failed, calculation may have failed too
-				ApplyAttemptChanges(attempt_value, attempt_effect)
+				Recalibrate()
+				ApplyAttemptChanges(attempt_value, attempt_effect, false)
 				return
 			}
 			if(effect = "")
 			{
-				Recalibrate() ; subject to debate
-				ApplyAttemptChanges(attempt_value, attempt_effect)
+				Recalibrate()
+				ApplyAttemptChanges(attempt_value, attempt_effect, false)
 				return
 			}
 			else
@@ -687,7 +687,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 						tampon_reliquat := tampon_reliquat + ConvertToReliquat(value, effect, 0)
 					}
 				}
-				if(i_ef_index)
+				if(i_ef_index and adjust_values)
 				{
 					vef_index[i_ef_index] := vef_index[i_ef_index] + value
 					if(max_index[i_ef_index] = 0 and vef_index[i_ef_index] = 0 and min_index[i_ef_index] = 0 and modif_max_index[i_ef_index] = 0)
@@ -706,7 +706,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 						}
 					}
 				}
-				else
+				else if(adjust_values)
 				{
 					vef_index.Push(value)
 					def_index.Push(effect)
