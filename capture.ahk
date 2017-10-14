@@ -80,6 +80,7 @@ rf_instructions := "instructions.csv"
 pic_min := "min"
 pic_max := "max"
 pic_effect := "eff"
+pic_line := "uef"
 
 Hotkey, !Numpad0, Termination, On
 Hotkey, !Numpad1, Calibrate, On
@@ -219,6 +220,8 @@ Calibrate() ; funCalibrate
 	def_index := ConvertToKnownEffects(def_index)
 	
 	CalibrateInstructions()
+	
+	TestRfs() ; yolo
 }
 
 Recalibrate(new_item := false) ; funRecalibrate
@@ -273,6 +276,7 @@ Recalibrate(new_item := false) ; funRecalibrate
 	def_index := ConvertToKnownEffects(def_index)
 	
 	CalibrateInstructions()
+	
 	Sleep, 500
 }
 
@@ -451,19 +455,37 @@ AddToFinalFloors_Tolerances_Index(line) ; funAddToFinalFloors_Tolerances_Index
 	}
 }
 
-CaptureImage(pic_name) ; funCaptureImage
+CaptureImage(pic_name, line := 0, decal := 0) ; funCaptureImage
 {
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y
 	pToken := Gdip_Startup()
 	folderPath := A_ScriptDir "\ScreenShots\"
 	fileName := pic_name . ".png" ; A_YYYY "-" A_MM "-" A_DD "-" A_Hour "-" A_Min "-" A_Sec ".png"
 	
-	key_xy_s := pic_name . "_xy_s"
-	key_xy_e := pic_name . "_xy_e"
-	x_s := ConvertToPx(x_5_4_s, locations_index[key_xy_s][key_x], width_5_4)
-	y_s := ConvertToPx(y_5_4_s, locations_index[key_xy_s][key_y], height_5_4)
-	width := ConvertToPx(x_5_4_s, locations_index[key_xy_e][key_x], width_5_4) - x_s
-	height := ConvertToPx(y_5_4_s, locations_index[key_xy_e][key_y], height_5_4) - y_s
+	x_s := 0
+	y_s := 0
+	width := 0
+	height := 0
+	if(line > 0)
+	{
+		key_xy_s := pic_name . "_xy_s"
+		key_y_d := pic_name . "_y_d"
+		key_y_de := pic_name . "_y_de"
+		key_x_e := pic_name . "_x_e"
+		x_s := ConvertToPx(x_5_4_s, locations_index[key_xy_s][key_x], width_5_4)
+		y_s := ConvertToPx(y_5_4_s + decal, locations_index[key_xy_s][key_y], height_5_4, locations_index[key_y_d][key_y], line - 1)
+		width := ConvertToPx(x_5_4_s, locations_index[key_x_e][key_x], width_5_4) - x_s
+		height := ConvertToPx(y_5_4_s + decal, locations_index[key_xy_s][key_y] + locations_index[key_y_de][key_y], height_5_4, locations_index[key_y_d][key_y], line - 1) - y_s
+	}
+	else
+	{
+		key_xy_s := pic_name . "_xy_s"
+		key_xy_e := pic_name . "_xy_e"
+		x_s := ConvertToPx(x_5_4_s, locations_index[key_xy_s][key_x], width_5_4)
+		y_s := ConvertToPx(y_5_4_s, locations_index[key_xy_s][key_y], height_5_4)
+		width := ConvertToPx(x_5_4_s, locations_index[key_xy_e][key_x], width_5_4) - x_s
+		height := ConvertToPx(y_5_4_s, locations_index[key_xy_e][key_y], height_5_4) - y_s
+	}
 	
 	location := x_s . "|" . y_s . "|" . width . "|" . height
 	
@@ -540,7 +562,9 @@ ApplyOCR(pic_name) ; funApplyOCR
 
 StructureOcrResult(expression, container) ; funStructureOcrResult
 {
-	global def_index, max_index, min_index
+	global def_index, max_index, min_index, pic_line, locations_index, key_y, pic_line, height_5_4
+	key_y_de := pic_line . "_y_de"
+	delta_max := ConvertToPx(0, locations_index[key_y_de][key_y], height_5_4) // 2
 	container := []
 	parts := StrSplit(expression, ",")
 	i := 0
@@ -579,8 +603,64 @@ StructureOcrResult(expression, container) ; funStructureOcrResult
 				}
 				else if(StrLen(nbr) <= 4 and StrLen(nbr) > 0) ; yolo empeche usage de rune de chasse (osef)
 				{
-					Recalibrate()
-					return
+					j := i
+					delta := 0
+					while(delta <= delta_max)
+					{
+						CaptureImage(pic_line, i + 1, delta)
+						ocr_result := ApplyOCR(pic_line)
+						ocr_parts := StrSplit(ocr_result, ",")
+						For ocr_index, ocr_part in ocr_parts
+						{
+							if(ocr_part = "")
+							{
+								continue
+							}
+							else
+							{
+								ocr_position := InStr(ocr_part, "%", false, 1, 1)
+								if(ocr_position)
+								{
+									ocr_nbr := SubStr(ocr_part, 1, ocr_position - 1)
+									if ocr_nbr is integer
+									{
+										i := i + 1
+										container[i] := ocr_nbr
+										def_index[i] := SubStr(ocr_part, ocr_position)
+										if(!max_index.HasKey(i))
+										{
+											max_index[i] := 0
+											min_index[i] := 0
+										}
+										break 2
+									}
+								}
+								ocr_position := InStr(ocr_part, " ", false, 1, 1)
+								if(ocr_position)
+								{
+									ocr_nbr := SubStr(ocr_part, 1, ocr_position - 1)
+									if ocr_nbr is integer
+									{
+										i := i + 1
+										container[i] := ocr_nbr
+										def_index[i] := SubStr(ocr_part, ocr_position + 1)
+										if(!max_index.HasKey(i))
+										{
+											max_index[i] := 0
+											min_index[i] := 0
+										}
+										break 2
+									}
+								}
+							}
+						}
+						delta := delta + 1
+					}
+					if(j = i)
+					{
+						Recalibrate()
+						return
+					}
 				}
 			}
 			position := InStr(value, " ", false, 1, 1)
@@ -601,8 +681,64 @@ StructureOcrResult(expression, container) ; funStructureOcrResult
 				}
 				else if(StrLen(nbr) <= 4 and StrLen(nbr) > 0 and nbr != "%") ; yolo empeche usage de rune de chasse (osef)
 				{
-					Recalibrate()
-					return
+					j := i
+					delta := 0
+					while(delta <= delta_max)
+					{
+						CaptureImage(pic_line, i + 1, delta)
+						ocr_result := ApplyOCR(pic_line)
+						ocr_parts := StrSplit(ocr_result, ",")
+						For ocr_index, ocr_part in ocr_parts
+						{
+							if(ocr_part = "")
+							{
+								continue
+							}
+							else
+							{
+								ocr_position := InStr(ocr_part, "%", false, 1, 1)
+								if(ocr_position)
+								{
+									ocr_nbr := SubStr(ocr_part, 1, ocr_position - 1)
+									if ocr_nbr is integer
+									{
+										i := i + 1
+										container[i] := ocr_nbr
+										def_index[i] := SubStr(ocr_part, ocr_position)
+										if(!max_index.HasKey(i))
+										{
+											max_index[i] := 0
+											min_index[i] := 0
+										}
+										break 2
+									}
+								}
+								ocr_position := InStr(ocr_part, " ", false, 1, 1)
+								if(ocr_position)
+								{
+									ocr_nbr := SubStr(ocr_part, 1, ocr_position - 1)
+									if ocr_nbr is integer
+									{
+										i := i + 1
+										container[i] := ocr_nbr
+										def_index[i] := SubStr(ocr_part, ocr_position + 1)
+										if(!max_index.HasKey(i))
+										{
+											max_index[i] := 0
+											min_index[i] := 0
+										}
+										break 2
+									}
+								}
+							}
+						}
+						delta := delta + 1
+					}
+					if(j = i)
+					{
+						Recalibrate()
+						return
+					}
 				}
 			}
 			i := i + 1

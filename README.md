@@ -10,30 +10,31 @@ procédure /ping
 
 # affinement du comportement :
 
-en cas de stats (poids 1) dans la zone 61-101, comportement d'over puis remise à la dizaine
+**en cas de stats (poids 1) dans la zone 61-101, comportement d'over puis remise à la dizaine
 
 statistiques de taux de réussite des runes
 
-capture spécifique d'une ligne qui a posé problème à l'OCR (la zone de capture doit toucher le caractère)
-=>OCR detecte parfois mal les chiffres :=> si 4 caractères devant % ou espace, et que ce n'est pas un chiffre, la capture est fausse
+**capture multiple d'un jet avec ascenseur
 
-capture multiple d'un jet avec ascenseur
-
-refaire la capture au lieu de recalibrate quand on a un historique incomplet
+*refaire la capture au lieu de recalibrate quand on a un historique incomplet
 
 
 
 # en test : 
 
 Recalibrate() 
-=>cas étrange de rune appartenant à l'objet qui deviennent inconnues après recalibration (résistance poussé sur anneau valet veinard)
-=>modif_max_index est mal (re)configuré quelque part?
+=> cas étrange de rune appartenant à l'objet qui deviennent inconnues après recalibration (résistance poussé sur anneau valet veinard)
+=> modif_max_index est mal (re)configuré quelque part?
 
 système de detection immediate pour selectionner une rune dans l'inventaire
-=>cas ou le fusionner ne passe pas (réglé, à vérifier)
+=> cas ou le fusionner ne passe pas (réglé, à vérifier)
 
 analyse des couleurs de l'interface en nombreuses phases (de vérification d'état)
-=>manque gestion de fenêtre "cette recette ne donne rien"
+*******=> manque gestion de fenêtre "cette recette ne donne rien"
+
+capture spécifique d'une ligne qui a posé problème à l'OCR (la zone de capture doit toucher le caractère)
+=> OCR detecte parfois mal les chiffres :=> si 4 caractères devant % ou espace, et que ce n'est pas un chiffre, la capture est fausse
+=> tranche de 19px (en 1600x900) pour les caractères, à bouger verticalement sur plusieurs pixels jusqu'a trouver un chiffre? (réglé, à vérifier)
 
 
 
@@ -44,4 +45,5 @@ possibilité d'erreur de lecture de l'historique encore présente
 
 possibilité de mauvaise capture de la couleur de l'emplacement rune de l'atelier (pas résistant au lag lors de la calibration)
 
-fichiers se réencodent en UTF-8, raison inconnue (exécution autohotkey, push git, fermeture notepad++, ?)
+fichiers se réencodent de ANSI vers UTF-8, raison inconnue (exécution autohotkey, push git, fermeture notepad++, ouverture dans microsoft office excel, ?)
+=> pas encore rencontré depuis la conversion en ISO 8859-1
