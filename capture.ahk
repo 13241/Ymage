@@ -33,6 +33,7 @@ x_5_4_s := 0
 y_5_4_s := 0
 hex_color_rune := ""
 hex_color_fusion := ""
+hex_color_inventory := ""
 
 effects_index := {}
 key_rune := ""
@@ -109,7 +110,7 @@ Termination() ; funTermination
 Calibrate() ; funCalibrate
 {
 	Sleep, 500
-	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index, def_index, rf_runes, rf_coordinates, rf_floors, rf_final_floors, rf_instructions, pic_min, pic_max, pic_effect, hex_color_rune, hex_color_fusion, locations_index, key_x, key_y
+	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index, def_index, rf_runes, rf_coordinates, rf_floors, rf_final_floors, rf_instructions, pic_min, pic_max, pic_effect, hex_color_rune, hex_color_fusion, hex_color_inventory, locations_index, key_x, key_y
 	SysGet, width_margin_w, 32 ; window resizable zone, horizontal size
 	SysGet, height_margin_w, 33 ; window resizable zone, vertical size
 	SysGet, border_w, 4 ; height of window title bar
@@ -154,6 +155,61 @@ Calibrate() ; funCalibrate
 	y_fus := ConvertToPx(y_5_4_s, locations_index[key_fus_xy][key_y], height_5_4)
 	PixelGetColor, hex_color_fusion, %x_fus%, %y_fus%, Slow
 	
+	key_xy_search := "sea_xy"
+	x_search := ConvertToPx(x_5_4_s, locations_index[key_xy_search][key_x], width_5_4)
+	y_search := ConvertToPx(y_5_4_s, locations_index[key_xy_search][key_y], height_5_4)
+	key_xy_inventory := "inv_xy"
+	x := ConvertToPx(x_5_4_s, locations_index[key_xy_inventory][key_x], width_5_4)
+	y := ConvertToPx(y_5_4_s, locations_index[key_xy_inventory][key_y], height_5_4)
+	key_xy_inf := "inf_xy"
+	x_inf := ConvertToPx(x_5_4_s, locations_index[key_xy_inf][key_x], width_5_4)
+	y_inf := ConvertToPx(y_5_4_s, locations_index[key_xy_inf][key_y], height_5_4)
+	
+	temp_hex_color_inventory := ""
+	testing_color := ""
+	delay_ms := 0
+	SendInput {Click %x_inf% %y_inf%}
+	Sleep, 100
+	PixelGetColor, temp_hex_color_inventory, %x%, %y%, Slow
+	SendInput {Click %x_search% %y_search% 3}
+	Sleep, 100
+	no_result := "_$_"
+	SendInput {Raw}%no_result%
+	
+	PixelGetColor, testing_color, %x%, %y%, Slow
+	j := 0
+	while(testing_color = temp_hex_color_inventory and j < 20)
+	{
+		j := j + 1
+		Random, delay_ms, 50, 100
+		Sleep, %delay_ms%
+		PixelGetColor, testing_color, %x%, %y%, Slow
+	}
+	if(j = 20)
+	{
+		MsgBox, calibration _pixel inventory failed (1)
+	}
+	else
+	{
+		PixelGetColor, hex_color_inventory, %x%, %y%, Slow
+		SendInput {Click %x_search% %y_search% 3}
+		Sleep, 100
+		SendInput {BackSpace}
+		PixelGetColor, testing_color, %x%, %y%, Slow
+		j := 0
+		while(testing_color = hex_color_inventory and j < 20)
+		{
+			j := j + 1
+			Random, delay_ms, 50, 100
+			Sleep, %delay_ms%
+			PixelGetColor, testing_color, %x%, %y%, Slow
+		}
+		if(j = 20)
+		{
+			MsgBox, calibration _pixel inventory failed (2)
+		}
+	}
+	
 	CaptureImage(pic_min)
 	CaptureImage(pic_max)
 	CaptureImage(pic_effect)
@@ -163,32 +219,81 @@ Calibrate() ; funCalibrate
 	vef_index := StructureOcrResult(ApplyOCR(pic_effect), vef_index)
 	
 	def_index := ConvertToKnownEffects(def_index)
+	
+	CalibrateInstructions()
 }
 
 Recalibrate(new_item := false) ; funRecalibrate
 {
-	global reliquat, pic_min, pic_max, pic_effect, min_index, max_index, vef_index, def_index, prospection_exception, rf_floors, rf_final_floors, rf_instructions, auto_bypass
+	global reliquat, pic_min, pic_max, pic_effect, min_index, max_index, vef_index, def_index, prospection_exception, rf_floors, rf_final_floors, rf_instructions, auto_bypass, modif_max_index, more_additional_index, last_history, reliquat_exception
 	Sleep, 500
+	vef_index := []
+	def_index := []
+	modif_max_index := []
+	more_additional_index := []
+	reliquat := 0
+	prospection_exception := false
+	last_history := ""
+	reliquat_exception := 1000
+	auto_bypass := true
+	
 	ReadFile(rf_floors, "AddToFloors_Index")
 	ReadFile(rf_final_floors, "AddToFinalFloors_Tolerances_Index")
 	ReadFile(rf_instructions, "AddToInstructions_Index")
 	
 	CaptureImage(pic_effect)
-	vef_index := StructureOcrResult(ApplyOCR(pic_effect), vef_index)
-	def_index := ConvertToKnownEffects(def_index)
-	
-	prospection_exception := false
-	auto_bypass := true
 	
 	if(new_item)
 	{
-		reliquat := 0
 		CaptureImage(pic_min)
 		CaptureImage(pic_max)
 		min_index := StructureOcrResult(ApplyOCR(pic_min), min_index)
 		max_index := StructureOcrResult(ApplyOCR(pic_max), max_index)
 	}
+	
+	vef_index := StructureOcrResult(ApplyOCR(pic_effect), vef_index)
+	def_index := ConvertToKnownEffects(def_index)
+	
+	CalibrateInstructions()
 	Sleep, 500
+}
+
+CalibrateInstructions() ; funCalibrateInstructions
+{
+	global def_index, instructions_index, max_index, min_index, vef_index, modif_max_index, more_additional_index, key_effects, key_values
+	For c_index, c_effect in def_index
+	{
+		modif_max_index[c_index] := max_index[c_index]
+	}
+	For _priority, instruction in instructions_index
+	{
+		more_additional_index[_priority] := []
+		For c_index, c_effect in def_index
+		{
+			more_additional_index[_priority][c_index] := max_index[c_index]
+		}
+		For m_index, m_effect in instruction[key_effects]
+		{
+			d_index := HasValue(def_index, m_effect)
+			if(d_index != 0)
+			{
+				if(modif_max_index[d_index] != 0)
+				{
+					modif_max_index[d_index] := instruction[key_values][m_index]
+				}
+				more_additional_index[_priority][d_index] := instruction[key_values][m_index]
+			}
+			else
+			{
+				more_additional_index[_priority].Push(instruction[key_values][m_index])
+				def_index.Push(m_effect)
+				min_index.Push(0)
+				max_index.Push(0)
+				vef_index.Push(0)
+				modif_max_index.Push(0)
+			}
+		}
+	}
 }
 
 ConvertToPx(delta_margin, ratio, reference, delta_ratio := 0, n_delta_ratio := 0) ; funConvertToPx
@@ -577,8 +682,8 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 	SendInput {Click Up %x_e% %y_e%}
 	Sleep, 50
 	clipboard=
-	ClipWait, 0
 	SendInput ^{c}
+	ClipWait, 0
 	while(ErrorLevel)
 	{
 		ClipWait, 0
@@ -592,7 +697,7 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 	
 	last_line := []
 	
-	if(history_result = last_history)
+	if(InStr(last_history, history_result))
 	{
 		return last_line
 	}
@@ -609,14 +714,13 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 	return last_line
 }
 
-ApplyAttemptChanges(attempt_value, attempt_effect, adjust_values := true) ; funApplyAttemptChanges
+ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 {
 	global reliquat, vef_index, def_index, min_index, max_index, modif_max_index, more_additional_index, instructions_index, key_effects
 	lines_changes := CaptureLastAttemptHistory()
 	if(lines_changes.Length() = 0)
 	{
 		Recalibrate()
-		ApplyAttemptChanges(attempt_value, attempt_effect, false)
 		return
 	}
 	line_changes := lines_changes[1]
@@ -664,13 +768,11 @@ ApplyAttemptChanges(attempt_value, attempt_effect, adjust_values := true) ; funA
 			if value is not integer
 			{
 				Recalibrate()
-				ApplyAttemptChanges(attempt_value, attempt_effect, false)
 				return
 			}
 			if(effect = "")
 			{
 				Recalibrate()
-				ApplyAttemptChanges(attempt_value, attempt_effect, false)
 				return
 			}
 			else
@@ -687,12 +789,21 @@ ApplyAttemptChanges(attempt_value, attempt_effect, adjust_values := true) ; funA
 						tampon_reliquat := tampon_reliquat + ConvertToReliquat(value, effect, 0)
 					}
 				}
-				if(i_ef_index and adjust_values)
+				if(i_ef_index)
 				{
 					vef_index[i_ef_index] := vef_index[i_ef_index] + value
 					if(max_index[i_ef_index] = 0 and vef_index[i_ef_index] = 0 and min_index[i_ef_index] = 0 and modif_max_index[i_ef_index] = 0)
 					{
-						if(!(instructions_index[key_effects].HasValue(effect)))
+						instructed_effect := false
+						For _priority, instruction in instructions_index
+						{
+							if(HasValue(instruction[key_effects], effect) != 0)
+							{
+								instructed_effect := true
+								break
+							}
+						}
+						if(instructed_effect = false)
 						{
 							max_index.RemoveAt(i_ef_index)
 							min_index.RemoveAt(i_ef_index)
@@ -706,7 +817,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect, adjust_values := true) ; funA
 						}
 					}
 				}
-				else if(adjust_values)
+				else
 				{
 					vef_index.Push(value)
 					def_index.Push(effect)
@@ -724,6 +835,10 @@ ApplyAttemptChanges(attempt_value, attempt_effect, adjust_values := true) ; funA
 	if(found_reliquat)
 	{
 		reliquat := reliquat + tampon_reliquat
+		if(reliquat < 0)
+		{
+			reliquat := 0
+		}
 	}
 }
 
@@ -1031,7 +1146,7 @@ ChooseRune(objective, adapted := true, bypass := true) ; funChooseRune
 
 UseRune(value, effect) ; funUseRune 
 {
-	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y, def_index, modif_max_index, effects_index, key_blank, key_pa, key_ra, key_rune, hex_color_rune, hex_color_fusion
+	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y, def_index, modif_max_index, effects_index, key_blank, key_pa, key_ra, key_rune, hex_color_rune, hex_color_fusion, hex_color_inventory
 	x := 0
 	y := 0
 	y_index := HasValue(def_index, effect)
@@ -1051,7 +1166,7 @@ UseRune(value, effect) ; funUseRune
 		x_index := 3
 		modifier := key_ra . " "
 	}
-	if(modif_max_index[y_index] = 0)
+	if(modif_max_index[y_index] = 0) ;yolo
 	{
 		key_xy_search := "sea_xy"
 		x_search := ConvertToPx(x_5_4_s, locations_index[key_xy_search][key_x], width_5_4)
@@ -1059,19 +1174,43 @@ UseRune(value, effect) ; funUseRune
 		key_xy_inventory := "inv_xy"
 		x := ConvertToPx(x_5_4_s, locations_index[key_xy_inventory][key_x], width_5_4)
 		y := ConvertToPx(y_5_4_s, locations_index[key_xy_inventory][key_y], height_5_4)
-		key_xy_inf := "inf_xy"
-		x_inf := ConvertToPx(x_5_4_s, locations_index[key_xy_inf][key_x], width_5_4)
-		y_inf := ConvertToPx(y_5_4_s, locations_index[key_xy_inf][key_y], height_5_4)
 		
-		SendInput {Click %x_inf% %y_inf%}
 		delay_ms := 0
-		Random, delay_ms, 750, 1250
+		temp_hex_color := ""
+		SendInput {Click %x_search% %y_search% 3}
+		Sleep, 100
+		no_result := "_$_"
+		SendInput {Raw}%no_result%
+		PixelGetColor, temp_hex_color, %x%, %y%, Slow
+		h := 0
+		while(temp_hex_color != hex_color_inventory and h < 40)
+		{
+			h := h + 1
+			Random, delay_ms, 50, 100
+			Sleep, %delay_ms%
+			PixelGetColor, temp_hex_color, %x%, %y%, Slow
+		}
+		if(h = 40)
+		{
+			MsgBox, rune selection failed void
+		}
 		SendInput {Click %x_search% %y_search% 3}
 		Sleep, 100
 		str_rune := effects_index[effect][key_rune]
 		SendInput {Raw}%key_rune% %modifier%%str_rune%
-		Random, delay_ms, 1000, 1500
-		Sleep, %delay_ms%
+		PixelGetColor, temp_hex_color, %x%, %y%, Slow
+		h := 0
+		while(temp_hex_color = hex_color_inventory and h < 40)
+		{
+			h := h + 1
+			Random, delay_ms, 50, 100
+			Sleep, %delay_ms%
+			PixelGetColor, temp_hex_color, %x%, %y%, Slow
+		}
+		if(h = 40)
+		{
+			MsgBox, rune selection failed %key_rune% %modifier%%str_rune%
+		}
 	}
 	else
 	{
@@ -1090,6 +1229,7 @@ UseRune(value, effect) ; funUseRune
 	}
 	
 	delay_ms := 0
+	Sleep, 100
 	SendInput {Click %x% %y% 2}
 	
 	key_color_xy := "col_xy"
@@ -1136,50 +1276,10 @@ UseRune(value, effect) ; funUseRune
 	}
 }
 
-CalibrateInstructions() ; funCalibrateInstructions
-{
-	global def_index, instructions_index, max_index, min_index, vef_index, modif_max_index, more_additional_index, key_effects, key_values
-	For c_index, c_effect in def_index
-	{
-		modif_max_index[c_index] := max_index[c_index]
-	}
-	For _priority, instruction in instructions_index
-	{
-		more_additional_index[_priority] := []
-		For c_index, c_effect in def_index
-		{
-			more_additional_index[_priority][c_index] := max_index[c_index]
-		}
-		For m_index, m_effect in instruction[key_effects]
-		{
-			d_index := HasValue(def_index, m_effect)
-			if(d_index != 0)
-			{
-				if(modif_max_index[d_index] != 0)
-				{
-					modif_max_index[d_index] := instruction[key_values][m_index]
-				}
-				more_additional_index[_priority][d_index] := instruction[key_values][m_index]
-			}
-			else
-			{
-				more_additional_index[_priority].Push(instruction[key_values][m_index])
-				def_index.Push(m_effect)
-				min_index.Push(0)
-				max_index.Push(0)
-				vef_index.Push(0)
-				modif_max_index.Push(0)
-			}
-		}
-	}
-}
-
 MainRoutine() ; funMainRoutine
 {
 	global min_index, max_index, vef_index, def_index, reliquat, instructions_index, key_effects, key_values, modif_max_index, more_additional_index, auto_bypass
 	Sleep, 1000
-	
-	CalibrateInstructions()
 	
 	finished := false
 	while(finished = false)
@@ -1211,7 +1311,7 @@ MainRoutine() ; funMainRoutine
 							index_def_effect := HasValue(def_index, effect)
 							if(index_def_effect = 0)
 							{
-								MsgBox, erreur effet d'objectif pas enregistre
+								MsgBox, erreur effet d'objectif pas enregistre %effect%
 							}
 							else if(modif_max_index[index_def_effect] = 0 and objective[index_def_effect] > 0)
 							{

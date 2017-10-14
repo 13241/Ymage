@@ -8,7 +8,7 @@ capture de la fenêtre du jeu "operation impossible" (en conflit avec le lag serv
 
 procédure /ping
 
-analyse des images en 4 captures de couleur (verif si envoyé en plus de verif si reçu)
+*****analyse des images en 4 captures de couleur (verif si envoyé en plus de verif si reçu)
 
 update du reliquat par "compréhension" (à débattre, inutile avec vérification de l'historique précédent) => possible à faire en négatif, voir si ça sert... x), p-e la solution pour les soucis de prospection?
 
@@ -26,16 +26,15 @@ statistiques de taux de réussite des runes
 
 # en test : 
 
-vérification de l'historique précédent, si identique, recapturer => encore possibilites de bugs (avec recalibrate on perd la precision sur le reliquat... => methode pour le retrouver)
+vérification de l'historique précédent, si compris dans précédent, recapturer + remise à niveau progressive du reliquat
+
+Recalibrate() (ajuster en fonction des besoins)
+
+système de detection immediate pour selectionner une rune dans l'inventaire
 
 
 
 # PROBLEMES
 
 possibilité d'erreur de lecture de l'historique encore présente (cause ? => fenêtre d'opération impossible + lag => capture de cette fenêtre) + autre raison (non identifie)
-
-check si pas de HASVALUE ou HASKEY inutile (pcq tous les arrays ont toutes les definitions mtn, pas avant)
-
-creer un système de detection immediate pour selectionner une rune dans l'inventaire
-
-Recalibrate()(voir s'il ne faut pas ajouter des valeurs de reliquat...)
+=> peut etre du au fait qu'on capture le clipboard pendant qu'il se remplit? à vérifier => encore un probleme si le clipboard selectionne une partie de la ligne finale
