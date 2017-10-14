@@ -4,15 +4,7 @@
 
 # résistance au lag :
 
-capture de la fenêtre du jeu "operation impossible" (en conflit avec le lag serveur, à débattre)
-
 procédure /ping
-
-*****analyse des images en 4 captures de couleur (verif si envoyé en plus de verif si reçu)
-
-update du reliquat par "compréhension" (à débattre, inutile avec vérification de l'historique précédent) => possible à faire en négatif, voir si ça sert... x), p-e la solution pour les soucis de prospection?
-
-si recalibrage X fois de suite, le serveur n'a pas pris en compte la modif
 
 
 
@@ -22,19 +14,34 @@ en cas de stats (poids 1) dans la zone 61-101, comportement d'over puis remise à
 
 statistiques de taux de réussite des runes
 
+capture spécifique d'une ligne qui a posé problème à l'OCR (la zone de capture doit toucher le caractère)
+=>OCR detecte parfois mal les chiffres :=> si 4 caractères devant % ou espace, et que ce n'est pas un chiffre, la capture est fausse
+
+capture multiple d'un jet avec ascenseur
+
+refaire la capture au lieu de recalibrate quand on a un historique incomplet
+
 
 
 # en test : 
 
-vérification de l'historique précédent, si compris dans précédent, recapturer + remise à niveau progressive du reliquat
-
-Recalibrate() (ajuster en fonction des besoins)
+Recalibrate() 
+=>cas étrange de rune appartenant à l'objet qui deviennent inconnues après recalibration (résistance poussé sur anneau valet veinard)
+=>modif_max_index est mal (re)configuré quelque part?
 
 système de detection immediate pour selectionner une rune dans l'inventaire
+=>cas ou le fusionner ne passe pas (réglé, à vérifier)
+
+analyse des couleurs de l'interface en nombreuses phases (de vérification d'état)
+=>manque gestion de fenêtre "cette recette ne donne rien"
 
 
 
 # PROBLEMES
 
-possibilité d'erreur de lecture de l'historique encore présente (cause ? => fenêtre d'opération impossible + lag => capture de cette fenêtre) + autre raison (non identifie)
-=> peut etre du au fait qu'on capture le clipboard pendant qu'il se remplit? à vérifier => encore un probleme si le clipboard selectionne une partie de la ligne finale
+possibilité d'erreur de lecture de l'historique encore présente
+=> capture du clipboard partielle => problème contré dans l'ensemble, sauf si la capture partielle se fait avant une virgule
+
+possibilité de mauvaise capture de la couleur de l'emplacement rune de l'atelier (pas résistant au lag lors de la calibration)
+
+fichiers se réencodent en UTF-8, raison inconnue (exécution autohotkey, push git, fermeture notepad++, ?)

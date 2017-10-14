@@ -41,7 +41,7 @@ TestRfs() ; funTestRfs
 			; }
 		; }
 	; }
-	CalibrateInstructions()
+	; CalibrateInstructions()
 	For index, final_floors in def_index
 	{
 		testvar1 := testvar1 . "///" . final_floors . "___" . vef_index[index] . "___" . min_index[index] . "___" . max_index[index] . "___" . modif_max_index[index]
