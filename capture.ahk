@@ -19,6 +19,9 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 #Include GDIP.ahk
 ; initialization
 
+ListLines, Off
+Process, Priority, , AboveNormal
+SetBatchLines, -1 ; a tester (voir si ça fonctionne encore avec, retire les 10ms de sleep entre chaque instruction)
 CoordMode, Mouse, Screen
 CoordMOde, Pixel, Screen
 
@@ -66,11 +69,11 @@ vef_index := []
 def_index := []
 modif_max_index := []
 more_additional_index := []
-reliquat := 0
 prospection_exception := false
 last_history := ""
 reliquat_exception := 1000
 auto_bypass := true
+reliquat := 0
 
 rf_runes := "runes.csv"
 rf_coordinates := "ratio_coordinates.csv"
@@ -220,8 +223,6 @@ Calibrate() ; funCalibrate
 	def_index := ConvertToKnownEffects(def_index)
 	
 	CalibrateInstructions()
-	
-	TestRfs() ; yolo
 }
 
 Recalibrate(new_item := false) ; funRecalibrate
@@ -564,7 +565,7 @@ StructureOcrResult(expression, container) ; funStructureOcrResult
 {
 	global def_index, max_index, min_index, pic_line, locations_index, key_y, pic_line, height_5_4
 	key_y_de := pic_line . "_y_de"
-	delta_max := ConvertToPx(0, locations_index[key_y_de][key_y], height_5_4) // 2
+	delta_max := ConvertToPx(0, locations_index[key_y_de][key_y], height_5_4) // 3
 	container := []
 	parts := StrSplit(expression, ",")
 	i := 0
@@ -604,7 +605,7 @@ StructureOcrResult(expression, container) ; funStructureOcrResult
 				else if(StrLen(nbr) <= 4 and StrLen(nbr) > 0) ; yolo empeche usage de rune de chasse (osef)
 				{
 					j := i
-					delta := 0
+					delta := -1 * delta_max
 					while(delta <= delta_max)
 					{
 						CaptureImage(pic_line, i + 1, delta)
@@ -682,7 +683,7 @@ StructureOcrResult(expression, container) ; funStructureOcrResult
 				else if(StrLen(nbr) <= 4 and StrLen(nbr) > 0 and nbr != "%") ; yolo empeche usage de rune de chasse (osef)
 				{
 					j := i
-					delta := 0
+					delta := -1 * delta_max
 					while(delta <= delta_max)
 					{
 						CaptureImage(pic_line, i + 1, delta)
@@ -887,10 +888,39 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 {
 	global reliquat, vef_index, def_index, min_index, max_index, modif_max_index, more_additional_index
-		, instructions_index, key_effects, effects_index
+		, instructions_index, key_effects, effects_index, locations_index, key_x, key_y, x_5_4_s, y_5_4_s
+		, width_5_4, height_5_4, hex_color_rune
 	lines_changes := CaptureLastAttemptHistory()
 	if(lines_changes.Length() = 0)
 	{
+		key_color_xy := "col_xy"
+		x_no_rune := ConvertToPx(x_5_4_s, locations_index[key_color_xy][key_x], width_5_4)
+		y_no_rune := ConvertToPx(y_5_4_s, locations_index[key_color_xy][key_y], height_5_4)
+		no_hex_color_rune := ""
+		
+		PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%, Slow
+		
+		if(no_hex_color_rune != hex_color_rune)
+		{
+			i := 0
+			delay_ms := 0
+			SendInput {Enter}
+			PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%, Slow
+			while(no_hex_color_rune != hex_color_rune and i < 40)
+			{
+				i := i + 1
+				Random, delay_ms, 50, 100
+				Sleep, %delay_ms%
+				SendInput {Enter}
+				PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%, Slow
+			}
+			if(no_hex_color_rune = hex_color_rune)
+			{
+				MsgBox, im useful ! I killed _error prompt ; yolo
+				ApplyAttemptChanges(attempt_value, attempt_effect)
+				return
+			}
+		}
 		Recalibrate()
 		return
 	}
@@ -1380,12 +1410,10 @@ UseRune(value, effect) ; funUseRune
 	else
 	{
 		key_xy_s := "run_xy_s"
-		key_x_e := "run_x_e"
-		key_y_e := "run_y_e"
 		key_x_d := "run_x_d"
 		key_y_d := "run_y_d"
 		y := ConvertToPx(y_5_4_s, locations_index[key_xy_s][key_y], height_5_4, locations_index[key_y_d][key_y], y_index - 1)
-		if(index = 0)
+		if(x_index = 0)
 		{
 			MsgBox, Fatal _error _no rune found
 			return
@@ -1475,24 +1503,7 @@ UseRune(value, effect) ; funUseRune
 			Sleep, %delay_ms%
 			PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%, Slow
 		}
-		if(i = 40) ; après un premier délai, on tente de se débarasser de la fenêtre "opération impossible"
-		{
-			SendInput {Enter}
-			PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%, Slow
-			i := 0
-			while(no_hex_color_rune != hex_color_rune and i < 40)
-			{
-				i := i + 1
-				Random, delay_ms, 50, 100
-				Sleep, %delay_ms%
-				PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%, Slow
-			}
-			if(no_hex_color_rune = hex_color_rune) ; si aucune rune n'est dans l'atelier au sortir de la fenêtre "opération impossible", on arrête
-			{
-				return
-			}
-		}
-		if(no_hex_color_rune != hex_color_rune) ; si une rune est présente dans l'atelier, procédure pour la retirer
+		if(i = 40 and no_hex_color_rune != hex_color_rune) ; si une rune est présente dans l'atelier, procédure pour la retirer
 		{
 			SendInput {Ctrl Down}
 			SendInput {Click %x_no_rune% %y_no_rune% 2}
@@ -1502,6 +1513,7 @@ UseRune(value, effect) ; funUseRune
 	
 			PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
 			
+			j := 0
 			while(no_hex_color_fusion != hex_color_fusion) ; on attend que le bouton fusionner soit indisponible
 			{
 				i := 0
@@ -1514,38 +1526,28 @@ UseRune(value, effect) ; funUseRune
 				}
 				if(i = 40 and no_hex_color_fusion != hex_color_fusion)
 				{
-					SendInput {Ctrl Down}
-					SendInput {Click %x_no_rune% %y_no_rune% 2}
-					Sleep, 100
-					SendInput {Ctrl Up}
-					SendInput {Click 0 0 0}
-					
-					PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+					if(Mod(j, 2) = 1)
+					{
+						SendInput {Ctrl Down}
+						SendInput {Click %x_no_rune% %y_no_rune% 2}
+						Sleep, 100
+						SendInput {Ctrl Up}
+						SendInput {Click 0 0 0}
+						
+						PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+						j := j + 1
+					}
+					else
+					{
+						SendInput {Enter}
+						
+						PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+						j := j + 1
+					}
 				}
 			}
 			
-			SendInput {Click %x% %y% 2} ; on remet la rune
-	
-			PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
-			
-			while(no_hex_color_fusion = hex_color_fusion) ; on attend que fusionner soit disponible
-			{
-				i := 0
-				while(no_hex_color_fusion = hex_color_fusion and i < 40)
-				{
-					i := i + 1
-					Random, delay_ms, 50, 100
-					Sleep, %delay_ms%
-					PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
-				}
-				if(i = 40 and no_hex_color_fusion = hex_color_fusion)
-				{
-					SendInput {Click %x% %y% 2}
-					PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
-				}
-			}
-			
-			SendInput {Click %x_fus% %y_fus% 2}
+			; yolo mieux vaut attendre un recalibrage dans applyattemptchanges que de remettre la rune une 2eme fois
 	
 			PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%, Slow
 		}
