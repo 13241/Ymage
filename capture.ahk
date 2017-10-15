@@ -76,7 +76,7 @@ auto_bypass := true
 reliquat := 0
 
 rf_runes := "runes.csv"
-rf_coordinates := "ratio_coordinates.csv"
+rf_coordinates := "coordinates.csv"
 rf_floors := "palliers.csv"
 rf_final_floors := "finalisation.csv"
 rf_instructions := "instructions.csv"
@@ -84,6 +84,9 @@ pic_min := "min"
 pic_max := "max"
 pic_effect := "eff"
 pic_line := "uef"
+pic_min_2 := "min2"
+pic_max_2 := "max2"
+pic_effect_2 := "eff2"
 
 Hotkey, !Numpad0, Termination, On
 Hotkey, !Numpad1, Calibrate, On
@@ -116,7 +119,8 @@ Calibrate() ; funCalibrate
 	Sleep, 500
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index, def_index
 		, rf_runes, rf_coordinates, rf_floors, rf_final_floors, rf_instructions, pic_min, pic_max, pic_effect
-		, hex_color_rune, hex_color_fusion, hex_color_inventory, locations_index, key_x, key_y
+		, hex_color_rune, hex_color_fusion, hex_color_inventory, locations_index, key_x, key_y, pic_min_2, pic_max_2
+		, pic_effect_2
 	SysGet, width_margin_w, 32 ; window resizable zone, horizontal size
 	SysGet, height_margin_w, 33 ; window resizable zone, vertical size
 	SysGet, border_w, 4 ; height of window title bar
@@ -152,7 +156,7 @@ Calibrate() ; funCalibrate
 	Sleep, 100
 	SendInput {Ctrl Up}
 	SendInput {Click 0 0 0}
-	Sleep, 1000
+	Sleep, 500
 	
 	PixelGetColor, hex_color_rune, %x_no_rune%, %y_no_rune%, Slow
 	key_fus_xy := "fus_xy"
@@ -174,6 +178,7 @@ Calibrate() ; funCalibrate
 	testing_color := ""
 	delay_ms := 0
 	SendInput {Click %x_inf% %y_inf%}
+	Sleep, 500
 	PixelGetColor, temp_hex_color_inventory, %x%, %y%, Slow
 	SendInput {Click %x_search% %y_search% 3}
 	no_result := "_$_"
@@ -191,6 +196,7 @@ Calibrate() ; funCalibrate
 	if(j = 40 and testing_color = temp_hex_color_inventory)
 	{
 		MsgBox, calibration _pixel inventory failed (1)
+		return
 	}
 	else
 	{
@@ -209,6 +215,7 @@ Calibrate() ; funCalibrate
 		if(j = 40 and testing_color = hex_color_inventory)
 		{
 			MsgBox, calibration _pixel inventory failed (2)
+			return
 		}
 	}
 	
@@ -216,13 +223,105 @@ Calibrate() ; funCalibrate
 	CaptureImage(pic_max)
 	CaptureImage(pic_effect)
 	
-	min_index := StructureOcrResult(ApplyOCR(pic_min), min_index)
-	max_index := StructureOcrResult(ApplyOCR(pic_max), max_index)
-	vef_index := StructureOcrResult(ApplyOCR(pic_effect), vef_index)
+	min_index := StructureOcrResult(ApplyOCR(pic_min))[1]
+	max_index := StructureOcrResult(ApplyOCR(pic_max))[1]
+	vdef_index := StructureOcrResult(ApplyOCR(pic_effect))
+	vef_index := vdef_index[1]
+	def_index := vdef_index[2]
 	
 	def_index := ConvertToKnownEffects(def_index)
 	
+	CaptureHiddenLines()
+	
 	CalibrateInstructions()
+}
+
+CaptureHiddenLines(new_item := true) ; funCaptureHiddenLines ; here
+{
+	global locations_index, x_5_4_s, width_5_4, key_x, key_y, y_5_4_s, height_5_4, pic_min_2, pic_max_2, pic_effect_2
+		, min_index, max_index, vef_index, def_index
+	key_xy_scroll := "run_xy_s"
+	x_scroll := ConvertToPx(x_5_4_s, locations_index[key_xy_scroll][key_x], width_5_4)
+	y_scroll := ConvertToPx(y_5_4_s, locations_index[key_xy_scroll][key_y], height_5_4)
+	SendInput {Click %x_scroll% %y_scroll% 0}
+	
+	key_xy_asc_1 := "asc_xy_1"
+	key_xy_asc_2 := "asc_xy_2"
+	key_xy_asc_3 := "asc_xy_3"
+	x_asc_1 := ConvertToPx(x_5_4_s, locations_index[key_xy_asc_1][key_x], width_5_4)
+	y_asc_1 := ConvertToPx(y_5_4_s, locations_index[key_xy_asc_1][key_y], height_5_4)
+	x_asc_2 := ConvertToPx(x_5_4_s, locations_index[key_xy_asc_2][key_x], width_5_4)
+	y_asc_2 := ConvertToPx(y_5_4_s, locations_index[key_xy_asc_2][key_y], height_5_4)
+	x_asc_3 := ConvertToPx(x_5_4_s, locations_index[key_xy_asc_3][key_x], width_5_4)
+	y_asc_3 := ConvertToPx(y_5_4_s, locations_index[key_xy_asc_3][key_y], height_5_4)
+	
+	hex_color_asc_1 := ""
+	hex_color_asc_2 := ""
+	hex_color_asc_3 := ""
+	PixelGetColor, hex_color_asc_1, %x_asc_1%, %y_asc_1%, Slow
+	PixelGetColor, hex_color_asc_2, %x_asc_2%, %y_asc_2%, Slow
+	PixelGetColor, hex_color_asc_3, %x_asc_3%, %y_asc_3%, Slow
+	if(hex_color_asc_1 = hex_color_asc_2 and hex_color_asc_2 != hex_color_asc_3)
+	{
+		scroll_count := 1
+		SendInput {WheelDown}
+		PixelGetColor, hex_color_asc_3, %x_asc_3%, %y_asc_3%, Slow
+		while(hex_color_asc_3 != hex_color_asc_2)
+		{
+			scroll_count := scroll_count + 1
+			SendInput {WheelDown}
+			PixelGetColor, hex_color_asc_3, %x_asc_3%, %y_asc_3%, Slow
+		}
+		
+		if(new_item)
+		{
+			CaptureImage(pic_min_2)
+			CaptureImage(pic_max_2)
+		}
+		CaptureImage(pic_effect_2)
+		
+		SendInput {Click %x_scroll% %y_scroll% 0}
+		while(scroll_count > 0)
+		{
+			scroll_count := scroll_count - 1
+			SendInput {WheelUp}
+		}
+		
+		temp_min_index := []
+		temp_max_index := []
+		if(new_item)
+		{
+			temp_min_index := StructureOcrResult(ApplyOCR(pic_min_2))[1]
+			temp_max_index := StructureOcrResult(ApplyOCR(pic_max_2))[1]
+		}
+		temp_vdef_index := StructureOcrResult(ApplyOCR(pic_effect_2))
+		temp_vef_index := temp_vdef_index[1]
+		temp_def_index := temp_vdef_index[2]
+		
+		temp_def_index := ConvertToKnownEffects(temp_def_index)
+		
+		For index, def in temp_def_index
+		{
+			if(HasValue(def_index, def))
+			{
+				continue
+			}
+			else
+			{
+				vef_index.Push(temp_vef_index[index])
+				def_index.Push(temp_def_index[index])
+				if(new_item and temp_max_index.HasKey(index))
+				{
+					min_index.Push(temp_min_index[index])
+					max_index.Push(temp_max_index[index])
+				}
+			}
+		}
+	}
+	else
+	{
+		return
+	}
 }
 
 Recalibrate(new_item := false) ; funRecalibrate
@@ -231,7 +330,7 @@ Recalibrate(new_item := false) ; funRecalibrate
 		, prospection_exception, rf_floors, rf_final_floors, rf_instructions, auto_bypass, modif_max_index
 		, more_additional_index, last_history, reliquat_exception, floors_index, key_stdfloors, key_basic_std
 		, key_pa_std, key_basic_spe, key_pa_spe, final_floors_index, tolerances_index, instructions_index
-		, key_effects, key_values
+		, key_effects, key_values, pic_min_2, pic_max_2, pic_effect_2
 	Sleep, 500
 	vef_index := []
 	def_index := []
@@ -261,7 +360,7 @@ Recalibrate(new_item := false) ; funRecalibrate
 	ReadFile(rf_final_floors, "AddToFinalFloors_Tolerances_Index")
 	ReadFile(rf_instructions, "AddToInstructions_Index")
 	
-	CaptureImage(pic_effect)
+	CaptureImage(pic_effect) ; yolo procedure de capture lignes supplementaires
 	
 	if(new_item)
 	{
@@ -269,12 +368,18 @@ Recalibrate(new_item := false) ; funRecalibrate
 		max_index := []
 		CaptureImage(pic_min)
 		CaptureImage(pic_max)
-		min_index := StructureOcrResult(ApplyOCR(pic_min), min_index)
-		max_index := StructureOcrResult(ApplyOCR(pic_max), max_index)
+		min_index := StructureOcrResult(ApplyOCR(pic_min))[1]
+		max_index := StructureOcrResult(ApplyOCR(pic_max))[1]
 	}
 	
-	vef_index := StructureOcrResult(ApplyOCR(pic_effect), vef_index)
+	
+	vdef_index := StructureOcrResult(ApplyOCR(pic_effect))
+	vef_index := vdef_index[1]
+	def_index := vdef_index[2]
+	
 	def_index := ConvertToKnownEffects(def_index)
+	
+	CaptureHiddenLines(new_item)
 	
 	CalibrateInstructions()
 	
@@ -287,6 +392,11 @@ CalibrateInstructions() ; funCalibrateInstructions
 		, key_effects, key_values
 	For c_index, c_effect in def_index
 	{
+		if(!max_index.HasKey(c_index))
+		{
+			max_index[c_index] := 0
+			min_index[c_index] := 0
+		}
 		modif_max_index[c_index] := max_index[c_index]
 	}
 	For _priority, instruction in instructions_index
@@ -561,12 +671,13 @@ ApplyOCR(pic_name) ; funApplyOCR
 	}
 }
 
-StructureOcrResult(expression, container) ; funStructureOcrResult
+StructureOcrResult(expression) ; funStructureOcrResult
 {
-	global def_index, max_index, min_index, pic_line, locations_index, key_y, pic_line, height_5_4
+	global pic_line, locations_index, key_y, pic_line, height_5_4
 	key_y_de := pic_line . "_y_de"
-	delta_max := ConvertToPx(0, locations_index[key_y_de][key_y], height_5_4) // 3
+	delta_max := ConvertToPx(0, locations_index[key_y_de][key_y], height_5_4) // 4
 	container := []
+	temp_def_index := []
 	parts := StrSplit(expression, ",")
 	i := 0
 	For index, value in parts
@@ -578,14 +689,10 @@ StructureOcrResult(expression, container) ; funStructureOcrResult
 		else if value is integer
 		{
 			i := i + 1
-			container[i] := value
+			container.Push(value)
 		}
 		else
 		{
-			if(index = 2)
-			{
-				def_index := []
-			}
 			position := InStr(value, "%", false, 1, 1)
 			if(position)
 			{
@@ -593,13 +700,8 @@ StructureOcrResult(expression, container) ; funStructureOcrResult
 				if nbr is integer
 				{
 					i := i + 1
-					container[i] := nbr
-					def_index[i] := SubStr(value, position)
-					if(!max_index.HasKey(i))
-					{
-						max_index[i] := 0
-						min_index[i] := 0
-					}
+					container.Push(nbr)
+					temp_def_index.Push(SubStr(value, position))
 					continue
 				}
 				else if(StrLen(nbr) <= 4 and StrLen(nbr) > 0) ; yolo empeche usage de rune de chasse (osef)
@@ -626,13 +728,8 @@ StructureOcrResult(expression, container) ; funStructureOcrResult
 									if ocr_nbr is integer
 									{
 										i := i + 1
-										container[i] := ocr_nbr
-										def_index[i] := SubStr(ocr_part, ocr_position)
-										if(!max_index.HasKey(i))
-										{
-											max_index[i] := 0
-											min_index[i] := 0
-										}
+										container.Push(ocr_nbr)
+										temp_def_index.Push(SubStr(ocr_part, ocr_position))
 										break 2
 									}
 								}
@@ -643,13 +740,8 @@ StructureOcrResult(expression, container) ; funStructureOcrResult
 									if ocr_nbr is integer
 									{
 										i := i + 1
-										container[i] := ocr_nbr
-										def_index[i] := SubStr(ocr_part, ocr_position + 1)
-										if(!max_index.HasKey(i))
-										{
-											max_index[i] := 0
-											min_index[i] := 0
-										}
+										container.Push(ocr_nbr)
+										temp_def_index.Push(SubStr(ocr_part, ocr_position + 1))
 										break 2
 									}
 								}
@@ -671,13 +763,8 @@ StructureOcrResult(expression, container) ; funStructureOcrResult
 				if nbr is integer
 				{
 					i := i + 1
-					container[i] := nbr
-					def_index[i] := SubStr(value, position + 1)
-					if(!max_index.HasKey(i))
-					{
-						max_index[i] := 0
-						min_index[i] := 0
-					}
+					container.Push(nbr)
+					temp_def_index.Push(SubStr(value, position + 1))
 					continue
 				}
 				else if(StrLen(nbr) <= 4 and StrLen(nbr) > 0 and nbr != "%") ; yolo empeche usage de rune de chasse (osef)
@@ -704,13 +791,8 @@ StructureOcrResult(expression, container) ; funStructureOcrResult
 									if ocr_nbr is integer
 									{
 										i := i + 1
-										container[i] := ocr_nbr
-										def_index[i] := SubStr(ocr_part, ocr_position)
-										if(!max_index.HasKey(i))
-										{
-											max_index[i] := 0
-											min_index[i] := 0
-										}
+										container.Push(ocr_nbr)
+										temp_def_index.Push(SubStr(ocr_part, ocr_position))
 										break 2
 									}
 								}
@@ -721,13 +803,8 @@ StructureOcrResult(expression, container) ; funStructureOcrResult
 									if ocr_nbr is integer
 									{
 										i := i + 1
-										container[i] := ocr_nbr
-										def_index[i] := SubStr(ocr_part, ocr_position + 1)
-										if(!max_index.HasKey(i))
-										{
-											max_index[i] := 0
-											min_index[i] := 0
-										}
+										container.Push(ocr_nbr)
+										temp_def_index.Push(SubStr(ocr_part, ocr_position + 1))
 										break 2
 									}
 								}
@@ -743,16 +820,11 @@ StructureOcrResult(expression, container) ; funStructureOcrResult
 				}
 			}
 			i := i + 1
-			container[i] := 0
-			def_index[i] := value
-			if(!max_index.HasKey(i))
-			{
-				max_index[i] := 0
-				min_index[i] := 0
-			}
+			container.Push(0)
+			temp_def_index.Push(value)
 		}
 	}
-	return container
+	return [container, temp_def_index]
 }
 
 LevenshteinDistance(word, ref) ; funLevenshteinDistance
@@ -1375,7 +1447,7 @@ UseRune(value, effect) ; funUseRune
 		x_index := 3
 		modifier := key_ra . " "
 	}
-	if(modif_max_index[y_index] = 0)
+	if(modif_max_index[y_index] = 0 or y_index > 14) ; yolo pas d'usage de l'ascenseur pendant le fm
 	{
 		key_xy_search := "sea_xy"
 		x_search := ConvertToPx(x_5_4_s, locations_index[key_xy_search][key_x], width_5_4)
