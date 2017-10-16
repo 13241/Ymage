@@ -21,7 +21,7 @@ TestApplyAttemptChanges() ; funTestApplyAttemptChanges()
 TestRfs() ; funTestRfs
 {
 	global effects_index, locations_index, floors_index, final_floors_index, tolerances_index, max_index, min_index, vef_index, def_index
-		, instructions_index, modif_max_index, reliquat, more_additional_index
+		, instructions_index, modif_max_index, reliquat, more_additional_index, trash_bin, destroyer_effect
 	testvar1 := ""
 	; For index, effect in objectives_index
 	; {
@@ -52,6 +52,11 @@ TestRfs() ; funTestRfs
 		}
 	}
 	testvar1 := testvar1 . "///reliquat___" . reliquat
+	For index, trash in trash_bin
+	{
+		testvar1 := testvar1 . "///trash___" . trash
+	}
+	testvar1 := testvar1 . "///destroyer___" . destroyer_effect
 	MsgBox, %testvar1%
 }
 

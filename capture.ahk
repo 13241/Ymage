@@ -26,7 +26,7 @@ CoordMode, Mouse, Screen
 CoordMOde, Pixel, Screen
 
 ; ###############################################################################################################################
-testing := "TestLevenshteinDistance"
+testing := "TestRfs"
 ; ###############################################################################################################################
 
 mage_id_w := ""
@@ -59,6 +59,9 @@ key_pa_spe := ""
 final_floors_index := []
 tolerances_index := []
 
+over_floors_index := []
+over_tolerances_index := []
+
 instructions_index := []
 key_effects := ""
 key_values := ""
@@ -69,16 +72,21 @@ vef_index := []
 def_index := []
 modif_max_index := []
 more_additional_index := []
-prospection_exception := false
+trash_exception := false
+current_trash := ""
+trash_bin := []
+destroyer_effect := ""
 last_history := ""
 reliquat_exception := 1000
 auto_bypass := true
+over_index := 0
 reliquat := 0
 
 rf_runes := "runes.csv"
 rf_coordinates := "coordinates.csv"
 rf_floors := "palliers.csv"
 rf_final_floors := "finalisation.csv"
+rf_over_floors := "overfinalisation.csv"
 rf_instructions := "instructions.csv"
 pic_min := "min"
 pic_max := "max"
@@ -114,13 +122,92 @@ Termination() ; funTermination
 	ExitApp
 }
 
+CleanAllGlobalVar()
+{
+	global mage_id_w, height_5_4, width_5_4, width_5_4, x_5_4_s, y_5_4_s, hex_color_rune, hex_color_fusion, hex_color_inventory
+		, effects_index, key_rune, key_blank, key_pa, key_ra, key_pwr, locations_index, key_x, key_y, floors_index, key_stdfloors
+		, key_basic_std, key_pa_std, key_basic_spe, key_pa_spe, final_floors_index, tolerances_index, over_floors_index, over_tolerances_index
+		, instructions_index, key_effects, key_values, min_index, max_index, vef_index, def_index, modif_max_index, more_additional_index
+		, trash_exception, current_trash, trash_bin, destroyer_effect, last_history, reliquat_exception, auto_bypass, over_index
+		, reliquat, rf_runes, rf_coordinates, rf_floors, rf_final_floors, rf_over_floors, rf_instructions, pic_min, pic_max, pic_effect
+		, pic_line, pic_min_2, pic_max_2, pic_effect_2
+	mage_id_w := ""
+	height_5_4 := 0
+	width_5_4 := 0
+	x_5_4_s := 0
+	y_5_4_s := 0
+	hex_color_rune := ""
+	hex_color_fusion := ""
+	hex_color_inventory := ""
+
+	effects_index := {}
+	key_rune := ""
+	key_blank := ""
+	key_pa := ""
+	key_ra := ""
+	key_pwr := ""
+
+	locations_index := {}
+	key_x := ""
+	key_y := ""
+
+	floors_index := {}
+	key_stdfloors := ""
+	key_basic_std := ""
+	key_pa_std := ""
+	key_basic_spe := ""
+	key_pa_spe := ""
+
+	final_floors_index := []
+	tolerances_index := []
+
+	over_floors_index := []
+	over_tolerances_index := []
+
+	instructions_index := []
+	key_effects := ""
+	key_values := ""
+
+	min_index := []
+	max_index := []
+	vef_index := []
+	def_index := []
+	modif_max_index := []
+	more_additional_index := []
+	trash_exception := false
+	current_trash := ""
+	trash_bin := []
+	destroyer_effect := ""
+	last_history := ""
+	reliquat_exception := 1000
+	auto_bypass := true
+	over_index := 0
+	reliquat := 0
+
+	rf_runes := "runes.csv"
+	rf_coordinates := "coordinates.csv"
+	rf_floors := "palliers.csv"
+	rf_final_floors := "finalisation.csv"
+	rf_over_floors := "overfinalisation.csv"
+	rf_instructions := "instructions.csv"
+	pic_min := "min"
+	pic_max := "max"
+	pic_effect := "eff"
+	pic_line := "uef"
+	pic_min_2 := "min2"
+	pic_max_2 := "max2"
+	pic_effect_2 := "eff2"
+}
+
 Calibrate() ; funCalibrate
 {
 	Sleep, 500
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index, def_index
 		, rf_runes, rf_coordinates, rf_floors, rf_final_floors, rf_instructions, pic_min, pic_max, pic_effect
 		, hex_color_rune, hex_color_fusion, hex_color_inventory, locations_index, key_x, key_y, pic_min_2, pic_max_2
-		, pic_effect_2
+		, pic_effect_2, rf_over_floors
+	CleanAllGlobalVar()
+	
 	SysGet, width_margin_w, 32 ; window resizable zone, horizontal size
 	SysGet, height_margin_w, 33 ; window resizable zone, vertical size
 	SysGet, border_w, 4 ; height of window title bar
@@ -145,6 +232,7 @@ Calibrate() ; funCalibrate
 	ReadFile(rf_coordinates, "AddToLocations_Index")
 	ReadFile(rf_floors, "AddToFloors_Index")
 	ReadFile(rf_final_floors, "AddToFinalFloors_Tolerances_Index")
+	ReadFile(rf_over_floors, "AddToOverFloors_Tolerances_Index")
 	ReadFile(rf_instructions, "AddToInstructions_Index")
 	
 	key_color_xy := "col_xy"
@@ -326,20 +414,25 @@ CaptureHiddenLines(new_item := true) ; funCaptureHiddenLines ; here
 Recalibrate(new_item := false) ; funRecalibrate
 {
 	global reliquat, pic_min, pic_max, pic_effect, min_index, max_index, vef_index, def_index
-		, prospection_exception, rf_floors, rf_final_floors, rf_instructions, auto_bypass, modif_max_index
+		, trash_exception, current_trash, trash_bin, rf_floors, rf_final_floors, rf_instructions, auto_bypass, modif_max_index
 		, more_additional_index, last_history, reliquat_exception, floors_index, key_stdfloors, key_basic_std
 		, key_pa_std, key_basic_spe, key_pa_spe, final_floors_index, tolerances_index, instructions_index
-		, key_effects, key_values, pic_min_2, pic_max_2, pic_effect_2
+		, key_effects, key_values, pic_min_2, pic_max_2, pic_effect_2, rf_over_floors, over_floors_index, over_tolerances_index
+		, destroyer_effect, over_index
 	Sleep, 500
 	vef_index := []
 	def_index := []
 	modif_max_index := []
 	more_additional_index := []
 	reliquat := 0
-	prospection_exception := false
+	trash_exception := false
+	current_trash := ""
+	trash_bin := []
 	last_history := ""
 	reliquat_exception := 1000
 	auto_bypass := true
+	destroyer_effect := ""
+	over_index := 0
 	
 	floors_index := {}
 	key_stdfloors := ""
@@ -350,6 +443,9 @@ Recalibrate(new_item := false) ; funRecalibrate
 
 	final_floors_index := []
 	tolerances_index := []
+	
+	over_floors_index := []
+	over_tolerances_index := []
 
 	instructions_index := []
 	key_effects := ""
@@ -357,6 +453,7 @@ Recalibrate(new_item := false) ; funRecalibrate
 	
 	ReadFile(rf_floors, "AddToFloors_Index")
 	ReadFile(rf_final_floors, "AddToFinalFloors_Tolerances_Index")
+	ReadFile(rf_over_floors, "AddToOverFloors_Tolerances_Index")
 	ReadFile(rf_instructions, "AddToInstructions_Index")
 	
 	CaptureImage(pic_effect) ; yolo procedure de capture lignes supplementaires
@@ -497,7 +594,7 @@ AddToEffects_Index(line) ; funAddToEffects_Index
 
 AddToInstructions_Index(line) ; funAddToInstructions_Index
 {
-	global instructions_index, key_effects, key_values, reliquat_exception
+	global instructions_index, key_effects, key_values, reliquat_exception, trash_bin, destroyer_effect
 	StringReplace, line, line, `r, , All
 	StringReplace, line, line, `n, , All
 	keys := StrSplit(line, ";")
@@ -512,19 +609,30 @@ AddToInstructions_Index(line) ; funAddToInstructions_Index
 		{
 			instructions_index[keys[3]] := {}
 		}
-		if(!IsObject(instructions_index[keys[3]][key_effects]) || !IsObject(instructions_index[keys[3]][key_values]))
+		if(!IsObject(instructions_index[keys[3]][key_effects]) or !IsObject(instructions_index[keys[3]][key_values]))
 		{
 			instructions_index[keys[3]][key_effects] := []
 			instructions_index[keys[3]][key_values] := []
 		}
 		instructions_index[keys[3]][key_effects].Push(keys[1])
-		instructions_index[keys[3]][key_values].Push(keys[2])
+		if(keys[2] >= 0)
+		{
+			instructions_index[keys[3]][key_values].Push(keys[2])
+			if(keys[2] = 0)
+			{
+				trash_bin.Push(keys[1])
+			}
+		}
+		else
+		{
+			instructions_index[keys[3]][key_values].Push(0)
+			destroyer_effect := keys[1]
+		}
 		if(keys[4] != "")
 		{
 			reliquat_exception := keys[4]
 		}
 	}
-	
 }
 
 AddToLocations_Index(line) ; funAddToLocations_Index
@@ -582,6 +690,20 @@ AddToFinalFloors_Tolerances_Index(line) ; funAddToFinalFloors_Tolerances_Index
 	{
 		final_floors_index.Push(keys[1])
 		tolerances_index.Push(keys[2])
+	}
+}
+
+AddToOverFloors_Tolerances_Index(line) ; funAddToOverFloors_Tolerances_Index
+{
+	global over_floors_index, over_tolerances_index
+	StringReplace, line, line, `r, , All
+	StringReplace, line, line, `n, , All
+	keys := StrSplit(line, ";")
+	floor_value := keys[1]
+	if floor_value is integer
+	{
+		over_floors_index.Push(keys[1])
+		over_tolerances_index.Push(keys[2])
 	}
 }
 
@@ -811,8 +933,9 @@ StructureOcrResult(expression) ; funStructureOcrResult
 					temp_def_index.Push(SubStr(value, position + 1))
 					continue
 				}
-				else if(StrLen(nbr) <= 4 and StrLen(nbr) > 0 and nbr != "%") ; yolo empeche usage de rune de chasse (osef)
+				else if(StrLen(nbr) <= 4 and StrLen(nbr) > 0 and SubStr(nbr, 1, 1) != "%") ; yolo empeche usage de rune de chasse (osef)
 				{
+					MsgBox, __%nbr%__
 					j := i
 					delta := 0
 					positive := true
@@ -1260,9 +1383,22 @@ HasValue(haystack, needle) ; funHasValue
 
 ChooseRune(objective, adapted := true, bypass := true) ; funChooseRune
 {
-	global max_index, min_index, effects_index, key_blank, key_pa, key_ra, key_pwr, def_index, vef_index
+	global max_index, min_index, effects_index, modif_max_index, key_blank, key_pa, key_ra, key_pwr, def_index, vef_index
 		, floors_index, key_stdfloors, key_basic_std, key_basic_spe, key_pa_std, key_pa_spe, final_floors_index
-		, tolerances_index, prospection_exception, reliquat, reliquat_exception, auto_bypass
+		, tolerances_index, trash_exception, current_trash, trash_bin, reliquat, reliquat_exception, auto_bypass
+		, over_floors_index, over_tolerances_index, destroyer_effect, over_index
+	if(over_index != 0 and destroyer_effect != "")
+	{
+		if(vef_index[over_index] > max_index[over_index])
+		{
+			destroyer_value := effects_index[destroyer_effect][key_blank]
+			return [destroyer_value, destroyer_effect]
+		}
+		else
+		{
+			over_index := 0
+		}
+	}
 	if(bypass = true)
 	{
 		auto_bypass := true
@@ -1299,38 +1435,49 @@ ChooseRune(objective, adapted := true, bypass := true) ; funChooseRune
 	max_delta_value := 0
 	max_value := 0
 	current_value := 0
+	exo_effect := ""
+	over_index := 0
+	if(auto_bypass = false)
+	{
+		max_pwr := 0
+		For index_exo, exo in modif_max_index
+		{
+			if(exo = 0 and adapted_objective[index_exo] = 1)
+			{
+				if(effects_index[def_index[index_exo]][key_pwr] > max_pwr)
+				{
+					max_pwr := effects_index[def_index[index_exo]][key_pwr]
+					exo_effect := def_index[index_exo]
+				}
+			}
+		}
+	}
 	For index, def in def_index
 	{
-		if(def = "Prospection")
+		if(def = current_trash or (current_trash = "" and HasValue(trash_bin, def) != 0))
 		{
-			if(reliquat > 9 || auto_bypass = false)
+			if(reliquat > 9 or auto_bypass = false)
 			{
-				prospection_exception := false
+				trash_exception := false
+				current_trash := ""
 			}
-			else if((vef_index[index] = 0 and reliquat < 1) or prospection_exception)
+			else if((vef_index[index] = 0 and reliquat < 1) or trash_exception)
 			{
-				temp_max_value := 0
-				if(max_index[index] >= min_index[index] + 2)
+				if(vef_index[index] >= min_index[index])
 				{
-					temp_max_value := min_index[index] + 2
-				}
-				else
-				{
-					temp_max_value := min_index[index]
-				}
-				if(vef_index[index] >= temp_max_value - 2)
-				{
-					prospection_exception := false
+					trash_exception := false
+					current_trash := ""
 					continue
 				}
 				else
 				{
-					if(!prospection_exception)
+					if(!trash_exception)
 					{
-						prospection_exception := true
+						trash_exception := true
+						current_trash := def
 					}
 					effect := def
-					max_value := temp_max_value
+					max_value := min_index[index]
 					pwr_effect := effects_index[def][key_pwr]
 					delta_value := max_value - vef_index[index]
 					max_delta_value := max_value - vef_index[index]
@@ -1383,17 +1530,37 @@ ChooseRune(objective, adapted := true, bypass := true) ; funChooseRune
 					minimal_delta := adapted_objective[index]
 				}
 			}
-			if(auto_bypass = true or ConvertToReliquat(minimal_delta, def, vef_index[index]) + reliquat >= 0)
+			over_tolerance := 0
+			For i_over, over_floor in over_floors_index
 			{
-				if(minimal_delta <= adapted_objective[index] - vef_index[index])
+				if(adapted_objective[index] >= over_floor)
+				{
+					over_tolerance := over_tolerances_index[i_over]
+					break
+				}
+			}
+			if(auto_bypass = true or (ConvertToReliquat(minimal_delta, def, vef_index[index]) + reliquat >= 0 and def != exo_effect))
+			{
+				if(minimal_delta <= adapted_objective[index] - vef_index[index] or (adapted_objective[index] - vef_index[index] > over_tolerance and minimal_delta != adapted_objective[index]))
 				{
 					if((effects_index[def][key_pwr] = pwr_effect and adapted_objective[index] - vef_index[index] > delta_value) or effects_index[def][key_pwr] > pwr_effect)
 					{
+						if(adapted_objective[index] - vef_index[index] > over_tolerance and minimal_delta != adapted_objective[index] and !(minimal_delta <= adapted_objective[index] - vef_index[index]))
+						{
+							over_index := index
+							max_value := vef_index[index] + minimal_delta
+							max_delta_value := minimal_delta
+							delta_value := minimal_delta
+						}
+						else
+						{
+							over_index := 0
+							max_value := max_index[index]
+							max_delta_value := max_index[index] - vef_index[index]
+							delta_value := adapted_objective[index] - vef_index[index]
+						}
 						effect := def
 						pwr_effect := effects_index[def][key_pwr]
-						delta_value := adapted_objective[index] - vef_index[index]
-						max_delta_value := max_index[index] - vef_index[index]
-						max_value := max_index[index]
 						current_value := vef_index[index]
 						if(max_delta_value < delta_value)
 						{
@@ -1481,6 +1648,7 @@ UseRune(value, effect) ; funUseRune
 {
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y, def_index, modif_max_index
 		, effects_index, key_blank, key_pa, key_ra, key_rune, hex_color_rune, hex_color_fusion, hex_color_inventory
+		, trash_bin
 	from_inventory := false
 	x := 0
 	y := 0
@@ -1501,7 +1669,7 @@ UseRune(value, effect) ; funUseRune
 		x_index := 3
 		modifier := key_ra . " "
 	}
-	if(modif_max_index[y_index] = 0 or y_index > 14) ; yolo pas d'usage de l'ascenseur pendant le fm
+	if((modif_max_index[y_index] = 0 and HasValue(trash_bin, effect) = 0) or y_index > 14) ; yolo pas d'usage de l'ascenseur pendant le fm
 	{
 		from_inventory := true
 		key_xy_search := "sea_xy"

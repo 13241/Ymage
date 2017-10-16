@@ -1,5 +1,7 @@
 effet;valeur;priorité;exception
-Sagesse;39;1;20
+Chance;-1;1;20
+Prospection;0;1;
+Sagesse;39;1;
 % Résistance Feu;3;1;
 Portée;1;1;
 % Résistance Feu;2;2;

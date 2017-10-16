@@ -15,15 +15,13 @@ procédure /ping
 
 # affinement du comportement :
 
-en cas de stats (poids 1) dans la zone 61-101, comportement d'over puis remise à la dizaine
-=> instruction sans valeur sera la rune par défaut pour briser le reliquat (attention lors du changement)
-=> voir palliers dans overfinalisation
-
 statistiques de taux de réussite des runes
 
 refaire la capture au lieu de recalibrate quand on a un historique incomplet
 
 afficher dans des widget la valeur des caracs masquées par l'interface
+
+intégrer L'OCR dans le code (sous forme de dll?)
 
 
 
@@ -38,6 +36,8 @@ capture de l'historique
 => tous ces cas se produisent quand la souris passe sur l'historique quand il est en train de bouger ?
 
 FreeOcr erreur de capture clipboard (due à la haute priorité du script?)
+
+remet la prospection apres avoir epuisé le reliquat pour mettre un over res, avant l'exo => à corriger
 
 
 
@@ -59,6 +59,16 @@ désactiver l'infobulle
 
 correction dans le cas ou une ligne est mal lue modifie mal les objectifs (à vérifier dans le cas ou ça se présente)
 réduire la bande vide de recherche à droite (pour un monoline avec chiffre faux)
+=> erreur jamais constatée
+
+gère la notion d'exo dans les instructions (valeur unitaire qu'on ajoute à la toute fin d'un jet)
+=> erreur jamais constatée
+<= sur une instruction over + exo po d'un item possédant un pa, tentait le po avant les % res
+
+généraliser la procédure d'exclusion des runes exclue dans les instructions
+=> erreur jamais constatée
+
+en cas de stats (poids 1) dans la zone 61-101, comportement d'over puis remise à la dizaine
 => erreur jamais constatée
 
 nouvelle version de LevenshteinDistance
