@@ -26,7 +26,7 @@ CoordMode, Mouse, Screen
 CoordMOde, Pixel, Screen
 
 ; ###############################################################################################################################
-testing := "TestRfs"
+testing := "TestLevenshteinDistance"
 ; ###############################################################################################################################
 
 mage_id_w := ""
@@ -240,7 +240,7 @@ CaptureHiddenLines(new_item := true) ; funCaptureHiddenLines ; here
 {
 	global locations_index, x_5_4_s, width_5_4, key_x, key_y, y_5_4_s, height_5_4, pic_min_2, pic_max_2, pic_effect_2
 		, min_index, max_index, vef_index, def_index
-	key_xy_scroll := "run_xy_s"
+	key_xy_scroll := "uef_xy_s"
 	x_scroll := ConvertToPx(x_5_4_s, locations_index[key_xy_scroll][key_x], width_5_4)
 	y_scroll := ConvertToPx(y_5_4_s, locations_index[key_xy_scroll][key_y], height_5_4)
 	SendInput {Click %x_scroll% %y_scroll% 0}
@@ -263,12 +263,11 @@ CaptureHiddenLines(new_item := true) ; funCaptureHiddenLines ; here
 	PixelGetColor, hex_color_asc_3, %x_asc_3%, %y_asc_3%, Slow
 	if(hex_color_asc_1 = hex_color_asc_2 and hex_color_asc_2 != hex_color_asc_3)
 	{
-		scroll_count := 1
+		SendInput {Click %x_asc_2% %y_asc_2% 0}
 		SendInput {WheelDown}
 		PixelGetColor, hex_color_asc_3, %x_asc_3%, %y_asc_3%, Slow
 		while(hex_color_asc_3 != hex_color_asc_2)
 		{
-			scroll_count := scroll_count + 1
 			SendInput {WheelDown}
 			PixelGetColor, hex_color_asc_3, %x_asc_3%, %y_asc_3%, Slow
 		}
@@ -279,12 +278,12 @@ CaptureHiddenLines(new_item := true) ; funCaptureHiddenLines ; here
 			CaptureImage(pic_max_2)
 		}
 		CaptureImage(pic_effect_2)
-		
-		SendInput {Click %x_scroll% %y_scroll% 0}
-		while(scroll_count > 0)
+		SendInput {WheelUp}
+		PixelGetColor, hex_color_asc_1, %x_asc_1%, %y_asc_1%, Slow
+		while(hex_color_asc_1 != hex_color_asc_2)
 		{
-			scroll_count := scroll_count - 1
 			SendInput {WheelUp}
+			PixelGetColor, hex_color_asc_1, %x_asc_1%, %y_asc_1%, Slow
 		}
 		
 		temp_min_index := []
@@ -399,27 +398,47 @@ CalibrateInstructions() ; funCalibrateInstructions
 		}
 		modif_max_index[c_index] := max_index[c_index]
 	}
-	For _priority, instruction in instructions_index
+	For _priority, instructions in instructions_index
 	{
 		more_additional_index[_priority] := []
 		For c_index, c_effect in def_index
 		{
 			more_additional_index[_priority][c_index] := max_index[c_index]
 		}
-		For m_index, m_effect in instruction[key_effects]
+	}
+	For _priority, instructions in instructions_index
+	{
+		For m_index, m_effect in instructions[key_effects]
 		{
 			d_index := HasValue(def_index, m_effect)
 			if(d_index != 0)
 			{
 				if(modif_max_index[d_index] != 0)
 				{
-					modif_max_index[d_index] := instruction[key_values][m_index]
+					modif_max_index[d_index] := instructions[key_values][m_index]
+					For sub_priority, all_priorities in more_additional_index
+					{
+						all_priorities[d_index] := instructions[key_values][m_index]
+					}
 				}
-				more_additional_index[_priority][d_index] := instruction[key_values][m_index]
+				else
+				{
+					more_additional_index[_priority][d_index] := instructions[key_values][m_index]
+				}
 			}
 			else
 			{
-				more_additional_index[_priority].Push(instruction[key_values][m_index])
+				For sub_priority, all_priorities in more_additional_index
+				{
+					if(sub_priority != _priority)
+					{
+						all_priorities.Push(0)
+					}
+					else
+					{
+						more_additional_index[_priority].Push(instructions[key_values][m_index])
+					}
+				}
 				def_index.Push(m_effect)
 				min_index.Push(0)
 				max_index.Push(0)
@@ -566,7 +585,7 @@ AddToFinalFloors_Tolerances_Index(line) ; funAddToFinalFloors_Tolerances_Index
 	}
 }
 
-CaptureImage(pic_name, line := 0, decal := 0) ; funCaptureImage
+CaptureImage(pic_name, line := 0, decal_y := 0, decal_x := 0) ; funCaptureImage
 {
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y
 	pToken := Gdip_Startup()
@@ -584,9 +603,9 @@ CaptureImage(pic_name, line := 0, decal := 0) ; funCaptureImage
 		key_y_de := pic_name . "_y_de"
 		key_x_e := pic_name . "_x_e"
 		x_s := ConvertToPx(x_5_4_s, locations_index[key_xy_s][key_x], width_5_4)
-		y_s := ConvertToPx(y_5_4_s + decal, locations_index[key_xy_s][key_y], height_5_4, locations_index[key_y_d][key_y], line - 1)
-		width := ConvertToPx(x_5_4_s, locations_index[key_x_e][key_x], width_5_4) - x_s
-		height := ConvertToPx(y_5_4_s + decal, locations_index[key_xy_s][key_y] + locations_index[key_y_de][key_y], height_5_4, locations_index[key_y_d][key_y], line - 1) - y_s
+		y_s := ConvertToPx(y_5_4_s + decal_y, locations_index[key_xy_s][key_y], height_5_4, locations_index[key_y_d][key_y], line - 1)
+		width := ConvertToPx(x_5_4_s, locations_index[key_x_e][key_x], width_5_4) - x_s - decal_x
+		height := ConvertToPx(y_5_4_s + decal_y, locations_index[key_xy_s][key_y] + locations_index[key_y_de][key_y], height_5_4, locations_index[key_y_d][key_y], line - 1) - y_s
 	}
 	else
 	{
@@ -673,9 +692,12 @@ ApplyOCR(pic_name) ; funApplyOCR
 
 StructureOcrResult(expression) ; funStructureOcrResult
 {
-	global pic_line, locations_index, key_y, pic_line, height_5_4
+	global pic_line, locations_index, key_y, pic_line, height_5_4, width_5_4, key_x
 	key_y_de := pic_line . "_y_de"
 	delta_max := ConvertToPx(0, locations_index[key_y_de][key_y], height_5_4) // 4
+	key_x_de := pic_line . "_x_de"
+	cut_width := 15
+	delta_width := ConvertToPx(0, locations_index[key_x_de][key_x], width_5_4) // cut_width
 	container := []
 	temp_def_index := []
 	parts := StrSplit(expression, ",")
@@ -707,52 +729,74 @@ StructureOcrResult(expression) ; funStructureOcrResult
 				else if(StrLen(nbr) <= 4 and StrLen(nbr) > 0) ; yolo empeche usage de rune de chasse (osef)
 				{
 					j := i
-					delta := -1 * delta_max
-					while(delta <= delta_max)
+					delta := 0
+					positive := true
+					while(delta <= delta_max and delta >= -1 * delta_max)
 					{
-						CaptureImage(pic_line, i + 1, delta)
-						ocr_result := ApplyOCR(pic_line)
-						ocr_parts := StrSplit(ocr_result, ",")
-						For ocr_index, ocr_part in ocr_parts
+						i_width := 0
+						while(i_width < (cut_width // 3) * 2)
 						{
-							if(ocr_part = "")
+							CaptureImage(pic_line, i + 1, delta, i_width * delta_width)
+							ocr_result := ApplyOCR(pic_line)
+							ocr_parts := StrSplit(ocr_result, ",")
+							For ocr_index, ocr_part in ocr_parts
 							{
-								continue
+								if(ocr_part = "")
+								{
+									continue
+								}
+								else
+								{
+									ocr_position := InStr(ocr_part, "%", false, 1, 1)
+									if(ocr_position)
+									{
+										ocr_nbr := SubStr(ocr_part, 1, ocr_position - 1)
+										if ocr_nbr is integer
+										{
+											i := i + 1
+											container.Push(ocr_nbr)
+											temp_def_index.Push(SubStr(ocr_part, ocr_position))
+											break 3
+										}
+									}
+									ocr_position := InStr(ocr_part, " ", false, 1, 1)
+									if(ocr_position)
+									{
+										ocr_nbr := SubStr(ocr_part, 1, ocr_position - 1)
+										if ocr_nbr is integer
+										{
+											i := i + 1
+											container.Push(ocr_nbr)
+											temp_def_index.Push(SubStr(ocr_part, ocr_position + 1))
+											break 3
+										}
+									}
+								}
 							}
-							else
+							i_width := i_width + 1
+						}
+						if(positive)
+						{
+							delta := delta + 1
+							if(delta > delta_max)
 							{
-								ocr_position := InStr(ocr_part, "%", false, 1, 1)
-								if(ocr_position)
-								{
-									ocr_nbr := SubStr(ocr_part, 1, ocr_position - 1)
-									if ocr_nbr is integer
-									{
-										i := i + 1
-										container.Push(ocr_nbr)
-										temp_def_index.Push(SubStr(ocr_part, ocr_position))
-										break 2
-									}
-								}
-								ocr_position := InStr(ocr_part, " ", false, 1, 1)
-								if(ocr_position)
-								{
-									ocr_nbr := SubStr(ocr_part, 1, ocr_position - 1)
-									if ocr_nbr is integer
-									{
-										i := i + 1
-										container.Push(ocr_nbr)
-										temp_def_index.Push(SubStr(ocr_part, ocr_position + 1))
-										break 2
-									}
-								}
+								positive := false
+								delta := -1
 							}
 						}
-						delta := delta + 1
+						else
+						{
+							delta := delta - 1
+						}
 					}
 					if(j = i)
 					{
 						Recalibrate()
 						return
+					}
+					else
+					{
+						continue
 					}
 				}
 			}
@@ -770,52 +814,74 @@ StructureOcrResult(expression) ; funStructureOcrResult
 				else if(StrLen(nbr) <= 4 and StrLen(nbr) > 0 and nbr != "%") ; yolo empeche usage de rune de chasse (osef)
 				{
 					j := i
-					delta := -1 * delta_max
-					while(delta <= delta_max)
+					delta := 0
+					positive := true
+					while(delta <= delta_max and delta >= -1 * delta_max)
 					{
-						CaptureImage(pic_line, i + 1, delta)
-						ocr_result := ApplyOCR(pic_line)
-						ocr_parts := StrSplit(ocr_result, ",")
-						For ocr_index, ocr_part in ocr_parts
+						i_width := 0
+						while(i_width < (cut_width // 3) * 2)
 						{
-							if(ocr_part = "")
+							CaptureImage(pic_line, i + 1, delta, i_width * delta_width)
+							ocr_result := ApplyOCR(pic_line)
+							ocr_parts := StrSplit(ocr_result, ",")
+							For ocr_index, ocr_part in ocr_parts
 							{
-								continue
+								if(ocr_part = "")
+								{
+									continue
+								}
+								else
+								{
+									ocr_position := InStr(ocr_part, "%", false, 1, 1)
+									if(ocr_position)
+									{
+										ocr_nbr := SubStr(ocr_part, 1, ocr_position - 1)
+										if ocr_nbr is integer
+										{
+											i := i + 1
+											container.Push(ocr_nbr)
+											temp_def_index.Push(SubStr(ocr_part, ocr_position))
+											break 3
+										}
+									}
+									ocr_position := InStr(ocr_part, " ", false, 1, 1)
+									if(ocr_position)
+									{
+										ocr_nbr := SubStr(ocr_part, 1, ocr_position - 1)
+										if ocr_nbr is integer
+										{
+											i := i + 1
+											container.Push(ocr_nbr)
+											temp_def_index.Push(SubStr(ocr_part, ocr_position + 1))
+											break 3
+										}
+									}
+								}
 							}
-							else
+							i_width := i_width + 1
+						}
+						if(positive)
+						{
+							delta := delta + 1
+							if(delta > delta_max)
 							{
-								ocr_position := InStr(ocr_part, "%", false, 1, 1)
-								if(ocr_position)
-								{
-									ocr_nbr := SubStr(ocr_part, 1, ocr_position - 1)
-									if ocr_nbr is integer
-									{
-										i := i + 1
-										container.Push(ocr_nbr)
-										temp_def_index.Push(SubStr(ocr_part, ocr_position))
-										break 2
-									}
-								}
-								ocr_position := InStr(ocr_part, " ", false, 1, 1)
-								if(ocr_position)
-								{
-									ocr_nbr := SubStr(ocr_part, 1, ocr_position - 1)
-									if ocr_nbr is integer
-									{
-										i := i + 1
-										container.Push(ocr_nbr)
-										temp_def_index.Push(SubStr(ocr_part, ocr_position + 1))
-										break 2
-									}
-								}
+								positive := false
+								delta := -1
 							}
 						}
-						delta := delta + 1
+						else
+						{
+							delta := delta - 1
+						}
 					}
 					if(j = i)
 					{
 						Recalibrate()
 						return
+					}
+					else
+					{
+						continue
 					}
 				}
 			}
@@ -830,45 +896,60 @@ StructureOcrResult(expression) ; funStructureOcrResult
 LevenshteinDistance(word, ref) ; funLevenshteinDistance
 {
 	distance := 0
-	big := ""
-	small := ""
-	if(StrLen(word) >= StrLen(ref))
+	len_word := StrLen(word)
+	len_ref := StrLen(ref)
+	if(len_word = 0)
 	{
-		StringLower, big, word
-		StringLower, small, ref
+		return len_ref
 	}
-	else
+	else if(len_ref = 0)
 	{
-		StringLower, big, ref
-		StringLower, small, word
+		return len_word
 	}
-	len_big := StrLen(big)
-	len_small := StrLen(small)
-	tampon := len_big - len_small
-	i_small := 1
-	i_big := 1
-	while(i_big <= len_big)
+	matrix := []
+	i := 1
+	while(i <= len_word + 1)
 	{
-		if(i_small <= len_small)
+		matrix[i] := []
+		j := 1
+		while(j <= len_ref + 1)
 		{
-			if(SubStr(big, i_big, 1) != SubStr(small, i_small, 1))
+			if(i = 1)
 			{
-				distance := distance + 1
-				if(tampon>0)
+				matrix[i][j] := j - 1
+			}
+			else if(j = 1)
+			{
+				matrix[i][j] := i - 1
+			}
+			else
+			{
+				cost := 0
+				if(SubStr(word, i, 1) != SubStr(ref, j, 1))
 				{
-					i_small := i_small - 1
-					tampon := tampon - 1
+					cost := 1
+				}
+				c_up := matrix[i - 1][j] + 1
+				c_left := matrix[i][j - 1] + 1
+				c_up_left := matrix[i - 1][j - 1] + cost
+				if(c_up < c_left)
+				{
+					matrix[i][j] := c_up
+				}
+				else
+				{
+					matrix[i][j] := c_left
+				}
+				if(c_up_left < matrix[i][j])
+				{
+					matrix[i][j] := c_up_left
 				}
 			}
+			j := j + 1
 		}
-		else
-		{
-			distance := distance + 1
-		}
-		i_small := i_small + 1
-		i_big := i_big + 1
+		i := i + 1
 	}
-	return distance
+	return matrix[len_word + 1][len_ref + 1]
 }
 
 ConvertToKnownEffects(ocr_def_index) ; funConvertToKnownEffects
@@ -965,34 +1046,6 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 	lines_changes := CaptureLastAttemptHistory()
 	if(lines_changes.Length() = 0)
 	{
-		key_color_xy := "col_xy"
-		x_no_rune := ConvertToPx(x_5_4_s, locations_index[key_color_xy][key_x], width_5_4)
-		y_no_rune := ConvertToPx(y_5_4_s, locations_index[key_color_xy][key_y], height_5_4)
-		no_hex_color_rune := ""
-		
-		PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%, Slow
-		
-		if(no_hex_color_rune != hex_color_rune)
-		{
-			i := 0
-			delay_ms := 0
-			SendInput {Enter}
-			PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%, Slow
-			while(no_hex_color_rune != hex_color_rune and i < 40)
-			{
-				i := i + 1
-				Random, delay_ms, 50, 100
-				Sleep, %delay_ms%
-				SendInput {Enter}
-				PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%, Slow
-			}
-			if(no_hex_color_rune = hex_color_rune)
-			{
-				MsgBox, im useful ! I killed _error prompt ; yolo
-				ApplyAttemptChanges(attempt_value, attempt_effect)
-				return
-			}
-		}
 		Recalibrate()
 		return
 	}
@@ -1428,6 +1481,7 @@ UseRune(value, effect) ; funUseRune
 {
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y, def_index, modif_max_index
 		, effects_index, key_blank, key_pa, key_ra, key_rune, hex_color_rune, hex_color_fusion, hex_color_inventory
+	from_inventory := false
 	x := 0
 	y := 0
 	y_index := HasValue(def_index, effect)
@@ -1449,6 +1503,7 @@ UseRune(value, effect) ; funUseRune
 	}
 	if(modif_max_index[y_index] = 0 or y_index > 14) ; yolo pas d'usage de l'ascenseur pendant le fm
 	{
+		from_inventory := true
 		key_xy_search := "sea_xy"
 		x_search := ConvertToPx(x_5_4_s, locations_index[key_xy_search][key_x], width_5_4)
 		y_search := ConvertToPx(y_5_4_s, locations_index[key_xy_search][key_y], height_5_4)
@@ -1557,6 +1612,7 @@ UseRune(value, effect) ; funUseRune
 		if(i = 40 and no_hex_color_fusion = hex_color_fusion)
 		{
 			SendInput {Click %x% %y% 2}
+			
 			PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
 		}
 	}
@@ -1696,8 +1752,33 @@ MainRoutine() ; funMainRoutine
 		}
 		if(rune[1] != 0)
 		{
-			UseRune(rune[1], rune[2])
-			ApplyAttemptChanges(rune[1], rune[2])
+			is_completed := false
+			For _priority, instructions in instructions_index
+			{
+				counter := 0
+				For i_instruction, effect in instructions[key_effects]
+				{
+					i_item := HasValue(def_index, effect)
+					if(modif_max_index[i_item] = 0 and vef_index[i_item] = instructions[key_values])
+					{
+						counter := counter + 1
+					}
+					else
+					{
+						break
+					}
+				}
+				if(counter = instructions[key_effects].Length())
+				{
+					is_completed := true
+					break
+				}
+			}
+			if(is_completed = false)
+			{
+				UseRune(rune[1], rune[2])
+				ApplyAttemptChanges(rune[1], rune[2])
+			}
 		}
 		else
 		{
@@ -1705,5 +1786,4 @@ MainRoutine() ; funMainRoutine
 		}
 	}
 	MsgBox, Objet terminé _ reliquat _ %reliquat%
-	TestRfs() ; yolo
 }

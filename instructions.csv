@@ -1,6 +1,9 @@
 effet;valeur;priorité;exception
 Sagesse;39;1;20
-% Résistance Feu;3;2;
+% Résistance Feu;3;1;
+Portée;1;1;
+% Résistance Feu;2;2;
+Portée;1;2;
 % Résistance Feu;1;3;
-PM;1;3;
-PA;1;4;
+Portée;1;3;
+Portée;1;4;
