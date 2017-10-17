@@ -456,7 +456,7 @@ Recalibrate(new_item := false) ; funRecalibrate
 	ReadFile(rf_over_floors, "AddToOverFloors_Tolerances_Index")
 	ReadFile(rf_instructions, "AddToInstructions_Index")
 	
-	CaptureImage(pic_effect) ; yolo procedure de capture lignes supplementaires
+	CaptureImage(pic_effect)
 	
 	if(new_item)
 	{
@@ -1131,9 +1131,20 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 	clipboard=
 	SendInput ^{c}
 	ClipWait, 0
+	counter := 0
 	while(ErrorLevel)
 	{
 		ClipWait, 0
+		if(Mod(counter, 20) = 0)
+		{
+			SendInput {Enter} ; yolo pas dit que ça règle le blocage
+			SendInput {Click Down %x_s% %y_s%}
+			SendInput {Click Up %x_e% %y_e%}
+			SendInput {Click Down %x_s% %y_s%}
+			SendInput {Click Up %x_e% %y_e%}
+			SendInput ^{c}
+		}
+		counter := counter + 1
 	}
 	history_result := clipboard
 	
@@ -1146,7 +1157,7 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 	
 	if(InStr(last_history, history_result))
 	{
-		return last_line
+		return CaptureLastAttemptHistory() ; [] before
 	}
 	else
 	{
@@ -1463,11 +1474,18 @@ ChooseRune(objective, adapted := true, bypass := true) ; funChooseRune
 			}
 			else if((vef_index[index] = 0 and reliquat < 1) or trash_exception)
 			{
-				if(vef_index[index] >= min_index[index])
+				high_objective := false
+				For i_spe, val_spe in max_index
+				{
+					if(val_spe = 0 and adapted_objective[i_spe] != 0)
+					{
+						high_objective := true
+					}
+				}
+				if(vef_index[index] >= min_index[index] or high_objective = true)
 				{
 					trash_exception := false
 					current_trash := ""
-					continue
 				}
 				else
 				{
@@ -1842,8 +1860,6 @@ UseRune(value, effect) ; funUseRune
 					}
 				}
 			}
-			
-			; yolo mieux vaut attendre un recalibrage dans applyattemptchanges que de remettre la rune une 2eme fois
 	
 			PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%, Slow
 		}

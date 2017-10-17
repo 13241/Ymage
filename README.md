@@ -23,6 +23,8 @@ afficher dans des widget la valeur des caracs masquées par l'interface
 
 intégrer L'OCR dans le code (sous forme de dll?)
 
+ne compte pas le trash over comme du reliquat (p-ex 2 chance et 43 reliquat => 45 reliquat)
+
 
 
 # en test/PROBLEMES : 
@@ -37,11 +39,12 @@ capture de l'historique
 
 FreeOcr erreur de capture clipboard (due à la haute priorité du script?)
 
-remet la prospection apres avoir epuisé le reliquat pour mettre un over res, avant l'exo => à corriger
-
 
 
 # en test/VALIDATION :
+
+remet la prospection apres avoir epuisé le reliquat pour mettre un over res, avant l'exo
+=> à vérifier
 
 possibilité de mauvaise capture de la couleur de l'emplacement rune de l'atelier (pas résistant au lag lors de la calibration)
 => erreur jamais constatée
@@ -57,9 +60,9 @@ désactiver l'infobulle
 <= infobulle objet vient masquer le bouton fusionner
 <= faire bouger la souris avant le test couleur cause un glissement de la rune et une nouvelle erreur
 
-correction dans le cas ou une ligne est mal lue modifie mal les objectifs (à vérifier dans le cas ou ça se présente)
+correction dans le cas ou une ligne est mal lue modifie mal les objectifs
 réduire la bande vide de recherche à droite (pour un monoline avec chiffre faux)
-=> erreur jamais constatée
+=> vérifier l'état de l'objet juste après une capture monoligne
 
 gère la notion d'exo dans les instructions (valeur unitaire qu'on ajoute à la toute fin d'un jet)
 => erreur jamais constatée
