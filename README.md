@@ -18,6 +18,7 @@ procédure /ping
 statistiques de taux de réussite des runes
 
 refaire la capture au lieu de recalibrate quand on a un historique incomplet
+=>partiellemet intégré
 
 afficher dans des widget la valeur des caracs masquées par l'interface
 
@@ -25,12 +26,25 @@ intégrer L'OCR dans le code (sous forme de dll?)
 
 ne compte pas le trash over comme du reliquat (p-ex 2 chance et 43 reliquat => 45 reliquat)
 
+remplacer tous les recalibrate par la strategie de buffer (dico temporaire pour stocker les changements (insert, remove, push...)
+
+=> procedure enter dans le début de userune (lorsqu'on retire la rune possiblement présente dans l'atelier)
+
+procedure /ping dans le cas d'une boucle infinie de capturelastattempthistory (fusion de rune pas passée)
+
+cas ou enter reste jusqu'au placement de rune, possibilité que plusieurs runes soient placées, possibilité que 2 fusions aient lieu => erreur de calcul (saut d'une ilgne)
+=> pas de gestion du enter dans le placement de rune
+=> en cas de lag, peut etre que plusieurs runes peuvent être placées : à tester
+=> procédure de retrait de rune pendant le placement
+=> fusionner ne peut pas etre appliqué sur plusieurs runes? (tant qu'on ne fait pas d'enter sur le placement de runes)
+
 
 
 # en test/PROBLEMES : 
 
 analyse des couleurs de l'interface/inventaire résistante au lag
 la fenêtre "recette impossible" fait perdre le fil du fm (apparait avec un gros délais, le programme met déjà la rune suivante)
+=>partiellement contré
 
 capture de l'historique
 => capture du clipboard partielle => problème contré dans l'ensemble, sauf si la capture partielle se fait avant une virgule

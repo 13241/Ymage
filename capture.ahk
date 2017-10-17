@@ -1137,7 +1137,7 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 		ClipWait, 0
 		if(Mod(counter, 20) = 0)
 		{
-			SendInput {Enter} ; yolo pas dit que ça règle le blocage
+			SendInput {Enter}
 			SendInput {Click Down %x_s% %y_s%}
 			SendInput {Click Up %x_e% %y_e%}
 			SendInput {Click Down %x_s% %y_s%}
@@ -1687,7 +1687,7 @@ UseRune(value, effect) ; funUseRune
 		x_index := 3
 		modifier := key_ra . " "
 	}
-	if((modif_max_index[y_index] = 0 and HasValue(trash_bin, effect) = 0) or y_index > 14) ; yolo pas d'usage de l'ascenseur pendant le fm
+	if((modif_max_index[y_index] = 0 and HasValue(trash_bin, effect) = 0) or y_index > 14)
 	{
 		from_inventory := true
 		key_xy_search := "sea_xy"
@@ -1703,7 +1703,7 @@ UseRune(value, effect) ; funUseRune
 		no_result := "_$_"
 		SendInput {Raw}%no_result%
 		PixelGetColor, temp_hex_color, %x%, %y%, Slow
-		while(temp_hex_color != hex_color_inventory)
+		while(temp_hex_color != hex_color_inventory) ; yolo manque procedure de gestion de la fenetre d'erreur
 		{
 			Random, delay_ms, 50, 100
 			Sleep, %delay_ms%
@@ -1713,7 +1713,7 @@ UseRune(value, effect) ; funUseRune
 		str_rune := effects_index[effect][key_rune]
 		SendInput {Raw}%key_rune% %modifier%%str_rune%
 		PixelGetColor, temp_hex_color, %x%, %y%, Slow
-		while(temp_hex_color = hex_color_inventory)
+		while(temp_hex_color = hex_color_inventory) ; yolo manque procedure de gestion de la fenetre d'erreur
 		{
 			Random, delay_ms, 50, 100
 			Sleep, %delay_ms%
@@ -1770,6 +1770,7 @@ UseRune(value, effect) ; funUseRune
 			}
 			if(i = 40 and no_hex_color_fusion != hex_color_fusion)
 			{
+				SendInput {Enter}
 				SendInput {Ctrl Down}
 				SendInput {Click %x_no_rune% %y_no_rune% 2}
 				Sleep, 100
@@ -1797,6 +1798,7 @@ UseRune(value, effect) ; funUseRune
 		}
 		if(i = 40 and no_hex_color_fusion = hex_color_fusion)
 		{
+			; SendInput {Enter} peut entrainer des erreurs (plusieurs runes dans l'atelier) => procédure de retrait de rune ICI
 			SendInput {Click %x% %y% 2}
 			
 			PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
@@ -1817,7 +1819,7 @@ UseRune(value, effect) ; funUseRune
 			Sleep, %delay_ms%
 			PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%, Slow
 		}
-		if(i = 40 and no_hex_color_rune != hex_color_rune) ; si une rune est présente dans l'atelier, procédure pour la retirer
+		if(i = 40 and no_hex_color_rune != hex_color_rune) ; suppression de la fenetre d'erreur
 		{
 			SendInput {Ctrl Down}
 			SendInput {Click %x_no_rune% %y_no_rune% 2}
