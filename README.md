@@ -17,18 +17,11 @@ procédure /ping
 
 statistiques de taux de réussite des runes
 
-refaire la capture au lieu de recalibrate quand on a un historique incomplet
-=>partiellemet intégré
-
 afficher dans des widget la valeur des caracs masquées par l'interface
 
 intégrer L'OCR dans le code (sous forme de dll?)
 
 ne compte pas le trash over comme du reliquat (p-ex 2 chance et 43 reliquat => 45 reliquat)
-
-remplacer tous les recalibrate par la strategie de buffer (dico temporaire pour stocker les changements (insert, remove, push...)
-
-=> procedure enter dans le début de userune (lorsqu'on retire la rune possiblement présente dans l'atelier)
 
 procedure /ping dans le cas d'une boucle infinie de capturelastattempthistory (fusion de rune pas passée)
 
@@ -57,8 +50,14 @@ FreeOcr erreur de capture clipboard (due à la haute priorité du script?)
 
 # en test/VALIDATION :
 
+=> procedure pour gérer la fenetre d'erreur (si useRune foire, on recalibre, (seul recalibrage présent)
+=> erreur jamais constatée (test si n'apparait pas trop souvent (calibrate)
+
+refaire la capture au lieu de recalibrate quand on a un historique incomplet
+=> erreur jamais constatée
+
 remet la prospection apres avoir epuisé le reliquat pour mettre un over res, avant l'exo
-=> à vérifier
+=> erreur jamais constatée
 
 possibilité de mauvaise capture de la couleur de l'emplacement rune de l'atelier (pas résistant au lag lors de la calibration)
 => erreur jamais constatée
