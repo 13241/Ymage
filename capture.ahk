@@ -1943,7 +1943,7 @@ MainRoutine() ; funMainRoutine
 			}
 			if(is_completed = false)
 			{
-				attempt = UseRune(rune[1], rune[2])
+				attempt := UseRune(rune[1], rune[2])
 				if(attempt = true)
 				{
 					ApplyAttemptChanges(rune[1], rune[2])
