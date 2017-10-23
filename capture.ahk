@@ -66,6 +66,8 @@ instructions_index := []
 key_effects := ""
 key_values := ""
 
+corrections_index := {}
+
 min_index := []
 max_index := []
 vef_index := []
@@ -91,10 +93,12 @@ rf_instructions := "instructions.csv"
 pic_min := "min"
 pic_max := "max"
 pic_effect := "eff"
-pic_line := "uef"
 pic_min_2 := "min2"
 pic_max_2 := "max2"
 pic_effect_2 := "eff2"
+pic_minline := "umi"
+pic_maxline := "uma"
+pic_effline := "uef"
 
 Hotkey, !Numpad0, Termination, On
 Hotkey, !Numpad1, Calibrate, On
@@ -130,7 +134,7 @@ CleanAllGlobalVar()
 		, instructions_index, key_effects, key_values, min_index, max_index, vef_index, def_index, modif_max_index, more_additional_index
 		, trash_exception, current_trash, trash_bin, destroyer_effect, last_history, reliquat_exception, auto_bypass, over_index
 		, reliquat, rf_runes, rf_coordinates, rf_floors, rf_final_floors, rf_over_floors, rf_instructions, pic_min, pic_max, pic_effect
-		, pic_line, pic_min_2, pic_max_2, pic_effect_2
+		, pic_effline, pic_min_2, pic_max_2, pic_effect_2, pic_minline, pic_maxline, corrections_index
 	mage_id_w := ""
 	height_5_4 := 0
 	width_5_4 := 0
@@ -167,6 +171,8 @@ CleanAllGlobalVar()
 	instructions_index := []
 	key_effects := ""
 	key_values := ""
+	
+	corrections_index := {}
 
 	min_index := []
 	max_index := []
@@ -193,7 +199,9 @@ CleanAllGlobalVar()
 	pic_min := "min"
 	pic_max := "max"
 	pic_effect := "eff"
-	pic_line := "uef"
+	pic_effline := "uef"
+	pic_minline := "umi"
+	pic_maxline := "uma"
 	pic_min_2 := "min2"
 	pic_max_2 := "max2"
 	pic_effect_2 := "eff2"
@@ -311,9 +319,9 @@ Calibrate() ; funCalibrate
 	CaptureImage(pic_max)
 	CaptureImage(pic_effect)
 	
-	min_index := StructureOcrResult(ApplyOCR(pic_min))[1]
-	max_index := StructureOcrResult(ApplyOCR(pic_max))[1]
-	vdef_index := StructureOcrResult(ApplyOCR(pic_effect))
+	min_index := StructureOcrResult(ApplyOCR(pic_min), pic_min)[1]
+	max_index := StructureOcrResult(ApplyOCR(pic_max), pic_max)[1]
+	vdef_index := StructureOcrResult(ApplyOCR(pic_effect), pic_effect)
 	vef_index := vdef_index[1]
 	def_index := vdef_index[2]
 	
@@ -378,10 +386,10 @@ CaptureHiddenLines(new_item := true) ; funCaptureHiddenLines ; here
 		temp_max_index := []
 		if(new_item)
 		{
-			temp_min_index := StructureOcrResult(ApplyOCR(pic_min_2))[1]
-			temp_max_index := StructureOcrResult(ApplyOCR(pic_max_2))[1]
+			temp_min_index := StructureOcrResult(ApplyOCR(pic_min_2), pic_min_2)[1]
+			temp_max_index := StructureOcrResult(ApplyOCR(pic_max_2), pic_max_2)[1]
 		}
-		temp_vdef_index := StructureOcrResult(ApplyOCR(pic_effect_2))
+		temp_vdef_index := StructureOcrResult(ApplyOCR(pic_effect_2), pic_effect_2)
 		temp_vef_index := temp_vdef_index[1]
 		temp_def_index := temp_vdef_index[2]
 		
@@ -464,12 +472,12 @@ Recalibrate(new_item := false) ; funRecalibrate
 		max_index := []
 		CaptureImage(pic_min)
 		CaptureImage(pic_max)
-		min_index := StructureOcrResult(ApplyOCR(pic_min))[1]
-		max_index := StructureOcrResult(ApplyOCR(pic_max))[1]
+		min_index := StructureOcrResult(ApplyOCR(pic_min), pic_min)[1]
+		max_index := StructureOcrResult(ApplyOCR(pic_max), pic_max)[1]
 	}
 	
 	
-	vdef_index := StructureOcrResult(ApplyOCR(pic_effect))
+	vdef_index := StructureOcrResult(ApplyOCR(pic_effect), pic_effect)
 	vef_index := vdef_index[1]
 	def_index := vdef_index[2]
 	
@@ -485,7 +493,12 @@ Recalibrate(new_item := false) ; funRecalibrate
 CalibrateInstructions() ; funCalibrateInstructions
 {
 	global def_index, instructions_index, max_index, min_index, vef_index, modif_max_index, more_additional_index
-		, key_effects, key_values
+		, key_effects, key_values, corrections_index
+	For index_correction, correction in corrections_index
+	{
+		eff_index := HasValue(def_index, index_correction)
+		max_index[eff_index] := correction
+	}
 	For c_index, c_effect in def_index
 	{
 		if(!max_index.HasKey(c_index))
@@ -594,7 +607,7 @@ AddToEffects_Index(line) ; funAddToEffects_Index
 
 AddToInstructions_Index(line) ; funAddToInstructions_Index
 {
-	global instructions_index, key_effects, key_values, reliquat_exception, trash_bin, destroyer_effect
+	global instructions_index, key_effects, key_values, reliquat_exception, trash_bin, destroyer_effect, corrections_index
 	StringReplace, line, line, `r, , All
 	StringReplace, line, line, `n, , All
 	keys := StrSplit(line, ";")
@@ -602,6 +615,10 @@ AddToInstructions_Index(line) ; funAddToInstructions_Index
 	{
 		key_effects := keys[1]
 		key_values := keys[2]
+	}
+	else if(keys[3] = 0)
+	{
+		corrections_index[keys[1]] := keys[2]
 	}
 	else
 	{
@@ -812,12 +829,30 @@ ApplyOCR(pic_name) ; funApplyOCR
 	}
 }
 
-StructureOcrResult(expression) ; funStructureOcrResult
+StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 {
-	global pic_line, locations_index, key_y, pic_line, height_5_4, width_5_4, key_x
-	key_y_de := pic_line . "_y_de"
+	global pic_effline, pic_minline, pic_maxline, pic_min, pic_max, pic_effect, locations_index, key_y, height_5_4, width_5_4, key_x
+		, pic_min_2, pic_max_2, pic_effect_2
+	pic_nameline := ""
+	if(pic_name = pic_min or pic_name = pic_min_2)
+	{
+		pic_nameline := pic_minline
+	}
+	else if(pic_name = pic_max or pic_name = pic_max_2)
+	{
+		pic_nameline := pic_maxline
+	}
+	else if(pic_name = pic_effect or pic_name = pic_effect_2)
+	{
+		pic_nameline := pic_effline
+	}
+	else
+	{
+		Return MsgBox, Erreur nom d image inconnu
+	}
+	key_y_de := pic_nameline . "_y_de"
 	delta_max := ConvertToPx(0, locations_index[key_y_de][key_y], height_5_4) // 4
-	key_x_de := pic_line . "_x_de"
+	key_x_de := pic_nameline . "_x_de"
 	cut_width := 15
 	delta_width := ConvertToPx(0, locations_index[key_x_de][key_x], width_5_4) // cut_width
 	container := []
@@ -830,10 +865,82 @@ StructureOcrResult(expression) ; funStructureOcrResult
 		{
 			continue
 		}
-		else if value is integer
+		else if(pic_nameline = pic_minline or pic_nameline = pic_maxline)
 		{
-			i := i + 1
-			container.Push(value)
+			if value is not integer
+			{
+				j := i
+				delta := 0
+				positive := true
+				while(delta <= delta_max and delta >= -1 * delta_max)
+				{
+					CaptureImage(pic_nameline, i + 1, delta, delta_width)
+					ocr_result := ApplyOCR(pic_nameline)
+					ocr_result_parts := StrSplit(ocr_result, ",")
+					min_ocr_result := ""
+					max_ocr_result := ""
+					min_is_integer := false
+					max_is_integer := false
+					For index_ocr_result_part, ocr_result_part in ocr_result_parts
+					{
+						ocr_result_subparts := StrSplit(ocr_result_part, " ")
+						if(ocr_result_subparts.Length() > 2) ; yolo cette condition est necessaire mais pas suffisante
+						{
+							min_ocr_result := ocr_result_subparts[1]
+							max_ocr_result := ocr_result_subparts[2]
+							if min_ocr_result is integer
+							{
+								min_is_integer := true
+							}
+							if max_ocr_result is integer
+							{
+								max_is_integer := true
+							}
+						}
+						else
+						{
+							continue
+						}
+					}
+					if(min_is_integer and max_is_integer)
+					{
+						i := i + 1
+						if(pic_nameline = pic_minline)
+						{
+							container.Push(min_ocr_result)
+							break
+						}
+						else
+						{
+							container.Push(max_ocr_result)
+							break
+						}
+					}
+					if(positive)
+					{
+						delta := delta + 1
+						if(delta > delta_max)
+						{
+							positive := false
+							delta := -1
+						}
+					}
+					else
+					{
+						delta := delta - 1
+					}
+				}
+				if(j = i)
+				{
+					Recalibrate(true)
+					return
+				}
+			}
+			else
+			{
+				i := i + 1
+				container.Push(value)
+			}
 		}
 		else
 		{
@@ -858,8 +965,8 @@ StructureOcrResult(expression) ; funStructureOcrResult
 						i_width := 0
 						while(i_width < (cut_width // 3) * 2)
 						{
-							CaptureImage(pic_line, i + 1, delta, i_width * delta_width)
-							ocr_result := ApplyOCR(pic_line)
+							CaptureImage(pic_nameline, i + 1, delta, i_width * delta_width)
+							ocr_result := ApplyOCR(pic_nameline)
 							ocr_parts := StrSplit(ocr_result, ",")
 							For ocr_index, ocr_part in ocr_parts
 							{
@@ -935,7 +1042,6 @@ StructureOcrResult(expression) ; funStructureOcrResult
 				}
 				else if(StrLen(nbr) <= 4 and StrLen(nbr) > 0 and SubStr(nbr, 1, 1) != "%") ; yolo empeche usage de rune de chasse (osef)
 				{
-					MsgBox, __%nbr%__
 					j := i
 					delta := 0
 					positive := true
@@ -944,8 +1050,8 @@ StructureOcrResult(expression) ; funStructureOcrResult
 						i_width := 0
 						while(i_width < (cut_width // 3) * 2)
 						{
-							CaptureImage(pic_line, i + 1, delta, i_width * delta_width)
-							ocr_result := ApplyOCR(pic_line)
+							CaptureImage(pic_nameline, i + 1, delta, i_width * delta_width)
+							ocr_result := ApplyOCR(pic_nameline)
 							ocr_parts := StrSplit(ocr_result, ",")
 							For ocr_index, ocr_part in ocr_parts
 							{
@@ -1252,7 +1358,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 				}
 				if(i_ef_index)
 				{
-					if(IsObject(tampon_changes[i_ef_index]))
+					if(!IsObject(tampon_changes[i_ef_index]))
 					{
 						tampon_changes[i_ef_index] := {}
 					}
@@ -1288,23 +1394,23 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 			}
 		}
 	}
-	For i_ef_index, change in tampon_changes
+	For i_tampon_change, tampon_change in tampon_changes
 	{
-		if(change["operation"] = "remove")
+		if(tampon_change["operation"] = "remove")
 		{
-			max_index.RemoveAt(i_ef_index)
-			min_index.RemoveAt(i_ef_index)
-			vef_index.RemoveAt(i_ef_index)
-			def_index.RemoveAt(i_ef_index)
-			modif_max_index.RemoveAt(i_ef_index)
+			max_index.RemoveAt(i_tampon_change)
+			min_index.RemoveAt(i_tampon_change)
+			vef_index.RemoveAt(i_tampon_change)
+			def_index.RemoveAt(i_tampon_change)
+			modif_max_index.RemoveAt(i_tampon_change)
 			For _priority, objective in more_additional_index
 			{
-				objective.RemoveAt(i_ef_index)
+				objective.RemoveAt(i_tampon_change)
 			}
 		}
 		else
 		{
-			vef_index[i_ef_index] := vef_index[i_ef_index] + change["value"]
+			vef_index[i_tampon_change] := vef_index[i_tampon_change] + tampon_change["value"]
 		}
 	}
 	For push_index, push in pushed_effects
@@ -1781,6 +1887,7 @@ UseRune(value, effect) ; funUseRune
 	
 	if(no_hex_color_fusion != hex_color_fusion)
 	{
+		SendInput {Enter}
 		SendInput {Ctrl Down}
 		SendInput {Click %x_no_rune% %y_no_rune% 2}
 		Sleep, 100
@@ -1792,14 +1899,14 @@ UseRune(value, effect) ; funUseRune
 		while(no_hex_color_fusion != hex_color_fusion)
 		{
 			i := 0
-			while(no_hex_color_fusion != hex_color_fusion and i < 100)
+			while(no_hex_color_fusion != hex_color_fusion and i < 40)
 			{
 				i := i + 1
 				Random, delay_ms, 50, 100
 				Sleep, %delay_ms%
 				PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
 			}
-			if(i = 100 and no_hex_color_fusion != hex_color_fusion)
+			if(i = 40 and no_hex_color_fusion != hex_color_fusion)
 			{
 				SendInput {Enter}
 				SendInput {Ctrl Down}
@@ -1818,33 +1925,89 @@ UseRune(value, effect) ; funUseRune
 	PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
 	
 	i := 0
-	while(no_hex_color_fusion = hex_color_fusion and i < 100)
+	while(no_hex_color_fusion = hex_color_fusion and i < 40)
 	{
 		i := i + 1
 		Random, delay_ms, 50, 100
 		Sleep, %delay_ms%
 		PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
 	}
-	if(i = 100 and no_hex_color_fusion = hex_color_fusion)
+	if(i = 40 and no_hex_color_fusion = hex_color_fusion)
 	{
 		return UseRune(value, effect)
 	}
 	
+	sent_fusion := false
 	SendInput {Click %x_fus% %y_fus% 2}
+	
+	; on peut certifier qu'on a fait le fusionner si on capture que fusionner est devenu gris après le clic
+	PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+	i := 0
+	while(no_hex_color_fusion != hex_color_fusion and i < 40)
+	{
+		i := i + 1
+		Random, delay_ms, 50, 100
+		Sleep, %delay_ms%
+		PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+	}
+	if(no_hex_color_fusion = hex_color_fusion)
+	{
+		sent_fusion := true
+	}
 	
 	PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%, Slow
 	
 	i := 0
-	while(no_hex_color_rune != hex_color_rune and i < 100)
+	while(no_hex_color_rune != hex_color_rune and i < 40)
 	{
 		i := i + 1
 		Random, delay_ms, 50, 100
 		Sleep, %delay_ms%
 		PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%, Slow
 	}
-	if(i = 100 and no_hex_color_rune != hex_color_rune)
+	if(i = 40 and no_hex_color_rune != hex_color_rune)
 	{
-		return false
+		PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+	
+		if(no_hex_color_fusion != hex_color_fusion)
+		{
+			SendInput {Enter}
+			SendInput {Ctrl Down}
+			SendInput {Click %x_no_rune% %y_no_rune% 2}
+			Sleep, 100
+			SendInput {Ctrl Up}
+			SendInput {Click 0 0 0}
+
+			PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+			
+			while(no_hex_color_fusion != hex_color_fusion)
+			{
+				i := 0
+				while(no_hex_color_fusion != hex_color_fusion and i < 40)
+				{
+					i := i + 1
+					Random, delay_ms, 50, 100
+					Sleep, %delay_ms%
+					PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+				}
+				if(i = 40 and no_hex_color_fusion != hex_color_fusion)
+				{
+					SendInput {Enter}
+					SendInput {Ctrl Down}
+					SendInput {Click %x_no_rune% %y_no_rune% 2}
+					Sleep, 100
+					SendInput {Ctrl Up}
+					SendInput {Click 0 0 0}
+					
+					PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+				}
+			}
+		}
+		Sleep, 2000
+		if(sent_fusion = false)
+		{
+			return false
+		}
 	}
 	return true
 }
@@ -1885,7 +2048,7 @@ MainRoutine() ; funMainRoutine
 							index_def_effect := HasValue(def_index, effect)
 							if(index_def_effect = 0)
 							{
-								MsgBox, erreur effet d'objectif pas enregistre %effect%
+								MsgBox, erreur effet d objectif pas enregistre %effect%
 							}
 							else if(modif_max_index[index_def_effect] = 0 and objective[index_def_effect] > 0)
 							{

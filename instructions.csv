@@ -1,17 +1,10 @@
 effet;valeur;priorité;exception
-Chance;-1;1;20
-Prospection;0;1;
-Sagesse;39;1;
-% Résistance Feu;6;1;
-Portée;1;1;
-% Résistance Feu;5;2;
-Portée;1;2;
-% Résistance Feu;4;3;
-Portée;1;3;
-% Résistance Feu;3;4;
-Portée;1;4;
-% Résistance Feu;2;5;
-Portée;1;5;
-% Résistance Feu;1;6;
-Portée;1;6;
-Portée;1;7;
+Agilité;80;0;20
+Chance;80;0;
+Sagesse;30;0;
+Force;-1;1;
+% Résistance Air;4;1;
+% Résistance Air;3;2;
+% Résistance Air;1;3;
+PM;1;3;
+PM;1;4;
