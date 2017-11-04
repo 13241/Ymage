@@ -1,0 +1,29 @@
+Initialization :
+mage_id_w ; target window title
+height_5_4 ; px height of the active area in target window
+width_5_4 ; px width
+x_5_4_s ; px x margin before active area
+y_5_4_s ; px y margin
+hex_color_rune ; px color of the EMPTIED rune fusion slot
+hex_color_fusion ; px color of the UNAVAILABLE fusion button
+hex_color_inventory ; px color of the EMPTIED inventory slot
+
+effects_index ; contains various informations about runes. key 1 => effect description : dictionary with the following keys...
+key_rune ; access rune name
+key_blank ; access simple rune effect value
+key_pa ; access pa rune effect value
+key_ra ; access ra rune effect value
+key_pwr ; access power rate for effect value = 1
+
+locations_index ; contains de ratio of various position in the active area of the target window (formula must be applied before use). keys...
+key_x ; access x related position
+key_y ; access y related position
+
+floors_index ; contains maximal values for concerned runes. keys 1 => power rate : dictionary with the following keys...
+key_stdfloors ; maximal standard floor (in over mode), regardless of the rune used
+key_basic_std ; maximal floor for basic rune while maximal value is equal or less than the standard floor
+key_pa_std ; maximal floor for pa rune while maximal value is equal or less than the standard floor
+key_basic_spe ; maximal floor for basic rune while maximal value is above the standard floor
+key_pa_spe ; maximal floor for pa rune while maximal value is above the standard floor
+
+final_floors_index ; 

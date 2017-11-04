@@ -15,40 +15,62 @@ procédure /ping
 
 # affinement du comportement :
 
-capturer sur plusieurs pixels min et max 
-=> capturer la ligne des effets avec pour un meilleur resultat
-=> ne capture pas uniquement les lignes erronées mais toutes les lignes à partir de la ligne erronée
-=> probleme si la colonne min n'est pas capturée du tout...
-=> ajout d'un procédé manuel au cas ou l'ocr ne capture jamais la bonne valeur
+problème : tente over puissance
 
-faire la procedure de recalibrage pour min et max aussi (freeocr)
+faille lag => perte du jet courant
 
-capturer un element fixe de couleur et tester par rapport a lui si le enter est present ou non (plus necessaire?)
+methode de verification si un objectif est rempli
 
-si un jet est au dessus du max lors de la calibration, enclencher la procédure de vide trash
+attention : avec l'objectif de res a 10 si y'a 10 8 et 8 7, il va tenter la rune pour 9 7 et pas 8 8 d'abord
+
+ajouter l'effet de rune "pdv rendus" pour les armes qui soignent
+
+tente un over % res air si il n'y a pas assez de reliquat pour over vita a 327/350?
+
+probleme si le jet n'est pas remonté avec le poids du reliquat et que la rune choisie pour continuer a le remonter est superieure à
+la valeur du reliquat + probleme arrete avant de faire la tenta over % alors qu'il a bien assez pour la faire => cas d'un over de 1 considéré comme un exo (contradiction)
+=> regle, peut etre encore un probleme quand il n'arrive pas a remonter l'item jusqu'au bout (reliquat insuffisant pour faire un over ra vi) a verifier
+
+gérer les potions d'élémentaire pour les armes, gérer les orbes reconstituants (pour fm)
 
 statistiques de taux de réussite des runes
 
 afficher dans des widget la valeur des caracs masquées par l'interface
 
 intégrer L'OCR dans le code (sous forme de dll?)
-
-ne compte pas le trash over comme du reliquat (p-ex 2 chance et 43 reliquat => 45 reliquat)
+=> attention toute particulière aux position ou il devrait/pourrait y avoir un nombre
 
 procedure /ping dans le cas d'une boucle infinie de capturelastattempthistory (fusion de rune pas passée)
-
-
+=>pas nécessaire? Le programme attend le changement de couleur de pixel, à vérifier si c'est le cas partout (peut etre raison de la faille))
 
 # en test/PROBLEMES : 
 
 FreeOcr erreur de capture clipboard (due à la haute priorité du script?)
 
 cas de choix d'action faux sans que le jet enregistré le soit, à tenir à l'oeil
-=> possibilité que le script mette le modif_max_index à 0 pour le pa quand il tombe, à vérifier !!!!
+=> possibilité que le script mette le modif_max_index à 0 pour le pa quand il tombe, à vérifier !!!! (plus d'actualité?)
 
 
 
 # en test/VALIDATION :
+
+capturer sur plusieurs pixels min et max 
+=> capturer la ligne des effets avec pour un meilleur resultat
+=> ne capture pas uniquement les lignes erronées mais toutes les lignes à partir de la ligne erronée
+=> probleme si la colonne min n'est pas capturée du tout...
+=> ajout d'un procédé manuel au cas ou l'ocr ne capture jamais la bonne valeur
+=> solution finale : passer à l'OCR dans le code
+
+créer une méthode de forçage du dernier objectif dans le cas ou aucun objectif n'est rempli et qu'aucune rune n'est mettable
+=> probablement à ajuster selon certains autres problèmes
+
+attention exo négatif vers 0 =/= 1
+=> conditions changées
+
+ne compte pas le trash over comme du reliquat (p-ex 2 chance et 43 reliquat => 45 reliquat)
+=> check chooserune et mainroutine
+
+si un jet est au dessus du max lors de la calibration, enclencher la procédure de vide trash
 
 gérer le cliquer glisser possible (à cause de capture pixel?)
 

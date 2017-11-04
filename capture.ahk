@@ -493,11 +493,18 @@ Recalibrate(new_item := false) ; funRecalibrate
 CalibrateInstructions() ; funCalibrateInstructions
 {
 	global def_index, instructions_index, max_index, min_index, vef_index, modif_max_index, more_additional_index
-		, key_effects, key_values, corrections_index
+		, key_effects, key_values, corrections_index, over_index, destroyer_effect
 	For index_correction, correction in corrections_index
 	{
 		eff_index := HasValue(def_index, index_correction)
-		max_index[eff_index] := correction
+		if(correction.HasKey("min"))
+		{
+			min_index[eff_index] := correction["min"]
+		}
+		if(correction.HasKey("max"))
+		{
+			max_index[eff_index] := correction["max"]
+		}
 	}
 	For c_index, c_effect in def_index
 	{
@@ -507,6 +514,10 @@ CalibrateInstructions() ; funCalibrateInstructions
 			min_index[c_index] := 0
 		}
 		modif_max_index[c_index] := max_index[c_index]
+		if(max_index[c_index] < vef_index[c_index] and def_index[c_index] != destroyer_effect) ; yolo teste si un over est present au calibrage
+		{
+			over_index := c_index
+		}
 	}
 	For _priority, instructions in instructions_index
 	{
@@ -523,7 +534,11 @@ CalibrateInstructions() ; funCalibrateInstructions
 			d_index := HasValue(def_index, m_effect)
 			if(d_index != 0)
 			{
-				if(modif_max_index[d_index] != 0)
+				if(over_index = d_index and instructions[key_values][m_index] != 0)
+				{
+					over_index := 0
+				}
+				if(modif_max_index[d_index] > instructions[key_values][m_index]) ; yolo condition changed (before test if not null)
 				{
 					modif_max_index[d_index] := instructions[key_values][m_index]
 					For sub_priority, all_priorities in more_additional_index
@@ -616,9 +631,43 @@ AddToInstructions_Index(line) ; funAddToInstructions_Index
 		key_effects := keys[1]
 		key_values := keys[2]
 	}
-	else if(keys[3] = 0)
+	else if(keys[3] = "min")
 	{
-		corrections_index[keys[1]] := keys[2]
+		if(!IsObject(corrections_index[keys[1]]))
+		{
+			corrections_index[keys[1]] := {}
+		}
+		corrections_index[keys[1]]["min"] := keys[2]
+	}
+	else if(keys[3] = "max")
+	{
+		if(!IsObject(corrections_index[keys[1]]))
+		{
+			corrections_index[keys[1]] := {}
+		}
+		corrections_index[keys[1]]["max"] := keys[2]
+	}
+	else if(keys[3] < 1)
+	{
+		if(!(instructions_index.HasKey("1")))
+		{
+			instructions_index["1"] := {}
+		}
+		if(!IsObject(instructions_index["1"][key_effects]) or !IsObject(instructions_index["1"][key_values]))
+		{
+			instructions_index["1"][key_effects] := []
+			instructions_index["1"][key_values] := []
+		}
+		if(keys[3] = -1)
+		{
+			destroyer_effect := keys[1]
+		}
+		else if(keys[3] = 0)
+		{
+			trash_bin.Push(keys[1])
+		}
+		instructions_index["1"][key_effects].Push(keys[1])
+		instructions_index["1"][key_values].Push(keys[2])
 	}
 	else
 	{
@@ -632,23 +681,11 @@ AddToInstructions_Index(line) ; funAddToInstructions_Index
 			instructions_index[keys[3]][key_values] := []
 		}
 		instructions_index[keys[3]][key_effects].Push(keys[1])
-		if(keys[2] >= 0)
-		{
-			instructions_index[keys[3]][key_values].Push(keys[2])
-			if(keys[2] = 0)
-			{
-				trash_bin.Push(keys[1])
-			}
-		}
-		else
-		{
-			instructions_index[keys[3]][key_values].Push(0)
-			destroyer_effect := keys[1]
-		}
-		if(keys[4] != "")
-		{
-			reliquat_exception := keys[4]
-		}
+		instructions_index[keys[3]][key_values].Push(keys[2])
+	}
+	if(keys[4] != "" and keys[4] != "exception")
+	{
+		reliquat_exception := keys[4]
 	}
 }
 
@@ -867,79 +904,11 @@ StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 		}
 		else if(pic_nameline = pic_minline or pic_nameline = pic_maxline)
 		{
+			i := i + 1
+			container.Push(value)
 			if value is not integer
 			{
-				j := i
-				delta := 0
-				positive := true
-				while(delta <= delta_max and delta >= -1 * delta_max)
-				{
-					CaptureImage(pic_nameline, i + 1, delta, delta_width)
-					ocr_result := ApplyOCR(pic_nameline)
-					ocr_result_parts := StrSplit(ocr_result, ",")
-					min_ocr_result := ""
-					max_ocr_result := ""
-					min_is_integer := false
-					max_is_integer := false
-					For index_ocr_result_part, ocr_result_part in ocr_result_parts
-					{
-						ocr_result_subparts := StrSplit(ocr_result_part, " ")
-						if(ocr_result_subparts.Length() > 2) ; yolo cette condition est necessaire mais pas suffisante
-						{
-							min_ocr_result := ocr_result_subparts[1]
-							max_ocr_result := ocr_result_subparts[2]
-							if min_ocr_result is integer
-							{
-								min_is_integer := true
-							}
-							if max_ocr_result is integer
-							{
-								max_is_integer := true
-							}
-						}
-						else
-						{
-							continue
-						}
-					}
-					if(min_is_integer and max_is_integer)
-					{
-						i := i + 1
-						if(pic_nameline = pic_minline)
-						{
-							container.Push(min_ocr_result)
-							break
-						}
-						else
-						{
-							container.Push(max_ocr_result)
-							break
-						}
-					}
-					if(positive)
-					{
-						delta := delta + 1
-						if(delta > delta_max)
-						{
-							positive := false
-							delta := -1
-						}
-					}
-					else
-					{
-						delta := delta - 1
-					}
-				}
-				if(j = i)
-				{
-					Recalibrate(true)
-					return
-				}
-			}
-			else
-			{
-				i := i + 1
-				container.Push(value)
+				MsgBox, OCR FAILED %pic_nameline% line %i%
 			}
 		}
 		else
@@ -1487,13 +1456,13 @@ GetNeededReliquat(objective) ; funGetNeededReliquat
 	return final_reliquat - current_reliquat
 }
 
-GetCurrentOverPwr() ; funGetCurrentOverPwr
+GetCurrentOverPwr(ignore_index := 0) ; funGetCurrentOverPwr
 {
 	global vef_index, def_index, max_index, effects_index, key_pwr
 	current_over_pwr := 0
 	For index, value in vef_index
 	{
-		if(vef_index[index] > max_index[index])
+		if(vef_index[index] > max_index[index] and index != ignore_index)
 		{
 			current_over_pwr := current_over_pwr + ConvertToReliquat(vef_index[index], def_index[index], 0) - ConvertToReliquat(max_index[index], def_index[index], 0)
 		}
@@ -1520,7 +1489,7 @@ HasValue(haystack, needle) ; funHasValue
 	}
 }
 
-ChooseRune(objective, adapted := true, bypass := true) ; funChooseRune
+ChooseRune(objective, adapted := true, bypass := true, force_objective := false) ; funChooseRune
 {
 	global max_index, min_index, effects_index, modif_max_index, key_blank, key_pa, key_ra, key_pwr, def_index, vef_index
 		, floors_index, key_stdfloors, key_basic_std, key_basic_spe, key_pa_std, key_pa_spe, final_floors_index
@@ -1576,17 +1545,17 @@ ChooseRune(objective, adapted := true, bypass := true) ; funChooseRune
 	current_value := 0
 	exo_effect := ""
 	over_index := 0
-	if(auto_bypass = false)
+	if(auto_bypass = false or force_objective = true) ; yolo adapted condition
 	{
 		max_pwr := 0
-		For index_exo, exo in modif_max_index
+		For index_exo, exo in def_index
 		{
-			if(exo = 0 and adapted_objective[index_exo] = 1)
+			if(adapted_objective[index_exo] - max_index[index_exo] = 1 and effects_index[exo][key_pwr] >= reliquat_exception) ; yolo objective changed
 			{
-				if(effects_index[def_index[index_exo]][key_pwr] > max_pwr)
+				if(effects_index[exo][key_pwr] > max_pwr)
 				{
-					max_pwr := effects_index[def_index[index_exo]][key_pwr]
-					exo_effect := def_index[index_exo]
+					max_pwr := effects_index[exo][key_pwr]
+					exo_effect := exo
 				}
 			}
 		}
@@ -1685,9 +1654,9 @@ ChooseRune(objective, adapted := true, bypass := true) ; funChooseRune
 					break
 				}
 			}
-			if(auto_bypass = true or (ConvertToReliquat(minimal_delta, def, vef_index[index]) + reliquat >= 0 and def != exo_effect))
+			if(def != exo_effect and (auto_bypass = true or ConvertToReliquat(minimal_delta, def, vef_index[index]) + reliquat >= 0)) ; yolo adapted condition
 			{
-				if(minimal_delta <= adapted_objective[index] - vef_index[index] or (adapted_objective[index] - vef_index[index] > over_tolerance and minimal_delta != adapted_objective[index]))
+				if(minimal_delta <= adapted_objective[index] - vef_index[index] or (adapted_objective[index] - vef_index[index] > over_tolerance and minimal_delta != adapted_objective[index] and !(ConvertToReliquat(max_index[index], def, 0) < -101 and ConvertToReliquat(vef_index[index] + minimal_delta, def, 0) < ConvertToReliquat(max_index[index], def, 0)))) ; yolo maximal over power rate condition (last)
 				{
 					if((effects_index[def][key_pwr] = pwr_effect and adapted_objective[index] - vef_index[index] > delta_value) or effects_index[def][key_pwr] > pwr_effect)
 					{
@@ -2050,7 +2019,7 @@ MainRoutine() ; funMainRoutine
 							{
 								MsgBox, erreur effet d objectif pas enregistre %effect%
 							}
-							else if(modif_max_index[index_def_effect] = 0 and objective[index_def_effect] > 0)
+							else if(objective[index_def_effect] > modif_max_index[index_def_effect]) ; yolo condition changed 
 							{
 								index_over_1 := index_def_effect
 								break
@@ -2058,18 +2027,22 @@ MainRoutine() ; funMainRoutine
 						}
 						if(index_over_1 != 0)
 						{
-							if(objective[index_over_1] > vef_index[index_over_1] and (reliquat + ConvertToReliquat(objective[index_over_1], def_index[index_over_1], 0) - ConvertToReliquat(vef_index[index_over_1], def_index[index_over_1], 0) >= 0))
+							if(objective[index_over_1] > vef_index[index_over_1] and (reliquat - GetCurrentOverPwr(index_over_1) + ConvertToReliquat(objective[index_over_1], def_index[index_over_1], 0) - ConvertToReliquat(vef_index[index_over_1], def_index[index_over_1], 0) >= 0)) ; yolo a test (prend en compte les over d'effets differents pour du reliquat
 							{
 								auto_bypass := false
 								rune := ChooseRune(objective, false, false)
 							}
-							else if(objective[index_over_1] = vef_index[index_over_1] or (HasValue(instructions_index[_priority][key_effects], def_index[index_over_1]) = instructions_index[_priority][key_effects].Length() and objective[index_over_1] = 1))
+							else if(objective[index_over_1] = vef_index[index_over_1] or (HasValue(instructions_index[_priority][key_effects], def_index[index_over_1]) = instructions_index[_priority][key_effects].Length() and objective[index_over_1] - max_index[index_over_1] = 1)) ; yolo condition changed
 							{
 								rune := ChooseRune(modif_max_index, false, true)
 								if(rune[1] = 0)
 								{
 									rune := ChooseRune(objective, false, true)
 								}
+							}
+							else if(_priority = instructions_index.Length()) ; yolo adapted condition
+							{
+								rune := ChooseRune(objective, false, true, true)
 							}
 							if(rune[1] != 0)
 							{
@@ -2082,39 +2055,14 @@ MainRoutine() ; funMainRoutine
 		}
 		if(rune[1] != 0)
 		{
-			is_completed := false
-			For _priority, instructions in instructions_index
+			attempt := UseRune(rune[1], rune[2])
+			if(attempt = true)
 			{
-				counter := 0
-				For i_instruction, effect in instructions[key_effects]
-				{
-					i_item := HasValue(def_index, effect)
-					if(modif_max_index[i_item] = 0 and vef_index[i_item] = instructions[key_values])
-					{
-						counter := counter + 1
-					}
-					else
-					{
-						break
-					}
-				}
-				if(counter = instructions[key_effects].Length())
-				{
-					is_completed := true
-					break
-				}
+				ApplyAttemptChanges(rune[1], rune[2])
 			}
-			if(is_completed = false)
+			else
 			{
-				attempt := UseRune(rune[1], rune[2])
-				if(attempt = true)
-				{
-					ApplyAttemptChanges(rune[1], rune[2])
-				}
-				else
-				{
-					Recalibrate()
-				}
+				Recalibrate()
 			}
 		}
 		else

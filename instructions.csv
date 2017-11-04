@@ -1,10 +1,8 @@
 effet;valeur;priorité;exception
-Agilité;80;0;20
-Chance;80;0;
-Sagesse;30;0;
-Force;-1;1;
-% Résistance Air;4;1;
-% Résistance Air;3;2;
-% Résistance Air;1;3;
-PM;1;3;
-PM;1;4;
+Agilité;0;-1;20
+Prospection;0;0;
+Dommages Neutre;14;1;
+Dommages Terre;14;1;
+Dommages Eau;14;1;
+Sagesse;39;1;
+% Résistance Air;3;1;
