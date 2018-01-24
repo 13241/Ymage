@@ -3,6 +3,7 @@
 SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
+; top
 
 ; 62px windows taskbar vertical left
 ; 23px windows title bar
@@ -16,17 +17,17 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ; force maximalize window for most accurate resolution
 
 #Persistent
-#Include GDIP.ahk
+#Include libraries/GDIP/GDIP.ahk
 ; initialization
 
-ListLines, Off
-Process, Priority, , AboveNormal
-SetBatchLines, -1 ; a tester (voir si ça fonctionne encore avec, retire les 10ms de sleep entre chaque instruction)
-CoordMode, Mouse, Screen
-CoordMOde, Pixel, Screen
+ListLines, Off ; does not show executed lines history
+Process, Priority, , AboveNormal ; raise the priority of the process
+SetBatchLines, -1 ; remove the 10ms delay between each instruction (hotkey interruption is less responsive)
+CoordMode, Mouse, Screen ; fix default coordinates for mouse operations to those from the screen
+CoordMode, Pixel, Screen ; fix default coordinates for pixel operations to those from the screen
 
 ; ###############################################################################################################################
-testing := "TestRfs"
+testing := "TestRfs" ; test function from test.ahk
 ; ###############################################################################################################################
 
 mage_id_w := ""
@@ -84,11 +85,11 @@ auto_bypass := true
 over_index := 0
 reliquat := 0
 
-rf_runes := "runes.csv"
-rf_coordinates := "coordinates.csv"
-rf_floors := "palliers.csv"
-rf_final_floors := "finalisation.csv"
-rf_over_floors := "overfinalisation.csv"
+rf_runes := "data/runes.csv"
+rf_coordinates := "data/coordinates.csv"
+rf_floors := "data/palliers.csv"
+rf_final_floors := "data/finalisation.csv"
+rf_over_floors := "data/overfinalisation.csv"
 rf_instructions := "instructions.csv"
 pic_min := "min"
 pic_max := "max"
@@ -108,6 +109,8 @@ Hotkey, !Numpad4, Recalibrate, On
 return
 
 ; functions
+
+; Force TrayTip to hide (problem with windows 10)
 HideTrayTip() ; funHideTrayTip
 {
 	TrayTip  ; Attempt to hide it the normal way.
@@ -119,6 +122,7 @@ HideTrayTip() ; funHideTrayTip
 	}
 }
 
+; Exit app
 Termination() ; funTermination
 {
 	HideTrayTip()
@@ -126,7 +130,8 @@ Termination() ; funTermination
 	ExitApp
 }
 
-CleanAllGlobalVar()
+; Reset all variable (which need resetting), /!\ should replace var list at the top
+CleanAllGlobalVar() ; fun CleanAllGlobalVar
 {
 	global mage_id_w, height_5_4, width_5_4, width_5_4, x_5_4_s, y_5_4_s, hex_color_rune, hex_color_fusion, hex_color_inventory
 		, effects_index, key_rune, key_blank, key_pa, key_ra, key_pwr, locations_index, key_x, key_y, floors_index, key_stdfloors
@@ -190,11 +195,11 @@ CleanAllGlobalVar()
 	over_index := 0
 	reliquat := 0
 
-	rf_runes := "runes.csv"
-	rf_coordinates := "coordinates.csv"
-	rf_floors := "palliers.csv"
-	rf_final_floors := "finalisation.csv"
-	rf_over_floors := "overfinalisation.csv"
+	rf_runes := "data/runes.csv"
+	rf_coordinates := "data/coordinates.csv"
+	rf_floors := "data/palliers.csv"
+	rf_final_floors := "data/finalisation.csv"
+	rf_over_floors := "data/overfinalisation.csv"
 	rf_instructions := "instructions.csv"
 	pic_min := "min"
 	pic_max := "max"
@@ -207,6 +212,7 @@ CleanAllGlobalVar()
 	pic_effect_2 := "eff2"
 }
 
+; 
 Calibrate() ; funCalibrate
 {
 	Sleep, 500
@@ -765,7 +771,7 @@ CaptureImage(pic_name, line := 0, decal_y := 0, decal_x := 0) ; funCaptureImage
 {
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y
 	pToken := Gdip_Startup()
-	folderPath := A_ScriptDir "\ScreenShots\"
+	folderPath := A_ScriptDir "\screenshots\"
 	fileName := pic_name . ".png" ; A_YYYY "-" A_MM "-" A_DD "-" A_Hour "-" A_Min "-" A_Sec ".png"
 	
 	x_s := 0
@@ -816,7 +822,7 @@ ApplyOCR(pic_name) ; funApplyOCR
 		SendInput {F4}
 		SendInput {Down}
 		SendInput {BackSpace}
-		SendInput {Raw}%A_ScriptDir%\ScreenShots
+		SendInput {Raw}%A_ScriptDir%\screenshots
 		SendInput {Enter}
 		WinWaitActive, Barre d'adresses, , 0
 		IfWinExist, Barre d'adresses
@@ -1759,6 +1765,11 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 	}
 }
 
+WriteData() ; funWriteData
+{
+	
+}
+
 UseRune(value, effect) ; funUseRune 
 {
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y, def_index, modif_max_index
@@ -2072,3 +2083,5 @@ MainRoutine() ; funMainRoutine
 	}
 	MsgBox, Objet terminé _ reliquat _ %reliquat%
 }
+
+; bottom

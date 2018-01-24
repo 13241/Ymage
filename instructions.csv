@@ -1,8 +1,7 @@
 effet;valeur;priorité;exception
-Agilité;0;-1;20
+Intelligence;0;-1;1000
 Prospection;0;0;
-Dommages Neutre;14;1;
-Dommages Terre;14;1;
-Dommages Eau;14;1;
-Sagesse;39;1;
-% Résistance Air;3;1;
+% Critique;0;0;
+% Résistance Feu;1;1;
+PM;1;1;
+PM;1;2;

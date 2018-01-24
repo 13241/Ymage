@@ -26,4 +26,57 @@ key_pa_std ; maximal floor for pa rune while maximal value is equal or less than
 key_basic_spe ; maximal floor for basic rune while maximal value is above the standard floor
 key_pa_spe ; maximal floor for pa rune while maximal value is above the standard floor
 
-final_floors_index ; 
+final_floors_index ; contains effective values
+tolerances_index ; contains maximal range below the current objective value when this objective is "adapted" (see funchooserune). Should be used with "final_floors_index"
+
+over_floors_index ; contains effective values
+over_tolerances_index ; contains maximal range below the current objective value when this objective is NOT "adapted" (see funchooserune). Should be used with "over_floors_index"
+
+instructions_index ; 
+key_effects ; 
+key_values ; 
+
+corrections_index ;
+
+min_index ;
+max_index ;
+vef_index ;
+def_index ;
+modif_max_index ; 
+more_additional_index ;
+trash_exception ;
+current_trash ;
+trash_bin ;
+destroyer_effect ;
+last_history ;
+reliquat_exception ;
+auto_bypass ;
+over_index ;
+reliquat ;
+
+rf_runes ;
+rf_coordinates ;
+rf_floors ;
+rf_final_floors ;
+rf_over_floors ;
+rf_instructions ;
+pic_min ;
+pic_max ;
+pic_effect ;
+pic_min_2 ;
+pic_max_2 ;
+pic_effect_2 ;
+pic_minline ;
+pic_maxline ;
+pic_effline ;
+
+functions :
+
+; Force TrayTip to hide (problem with windows 10)
+HideTrayTip() ; funHideTrayTip
+
+; Exit app
+Termination() ; funTermination
+
+; Reset all variable (which need resetting), /!\ should replace var list at the top
+CleanAllGlobalVar() ; fun CleanAllGlobalVar
