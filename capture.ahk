@@ -18,6 +18,7 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 #Persistent
 #Include libraries/GDIP/GDIP.ahk
+
 ; initialization
 
 ListLines, Off ; does not show executed lines history
@@ -26,84 +27,10 @@ SetBatchLines, -1 ; remove the 10ms delay between each instruction (hotkey inter
 CoordMode, Mouse, Screen ; fix default coordinates for mouse operations to those from the screen
 CoordMode, Pixel, Screen ; fix default coordinates for pixel operations to those from the screen
 
-; ###############################################################################################################################
-testing := "TestRfs" ; test function from test.ahk
-; ###############################################################################################################################
-
-mage_id_w := ""
-height_5_4 := 0
-width_5_4 := 0
-x_5_4_s := 0
-y_5_4_s := 0
-hex_color_rune := ""
-hex_color_fusion := ""
-hex_color_inventory := ""
-
-effects_index := {}
-key_rune := ""
-key_blank := ""
-key_pa := ""
-key_ra := ""
-key_pwr := ""
-
-locations_index := {}
-key_x := ""
-key_y := ""
-
-floors_index := {}
-key_stdfloors := ""
-key_basic_std := ""
-key_pa_std := ""
-key_basic_spe := ""
-key_pa_spe := ""
-
-final_floors_index := []
-tolerances_index := []
-
-over_floors_index := []
-over_tolerances_index := []
-
-instructions_index := []
-key_effects := ""
-key_values := ""
-
-corrections_index := {}
-
-min_index := []
-max_index := []
-vef_index := []
-def_index := []
-modif_max_index := []
-more_additional_index := []
-trash_exception := false
-current_trash := ""
-trash_bin := []
-destroyer_effect := ""
-last_history := ""
-reliquat_exception := 1000
-auto_bypass := true
-over_index := 0
-reliquat := 0
-
-rf_runes := "data/runes.csv"
-rf_coordinates := "data/coordinates.csv"
-rf_floors := "data/palliers.csv"
-rf_final_floors := "data/finalisation.csv"
-rf_over_floors := "data/overfinalisation.csv"
-rf_instructions := "instructions.csv"
-pic_min := "min"
-pic_max := "max"
-pic_effect := "eff"
-pic_min_2 := "min2"
-pic_max_2 := "max2"
-pic_effect_2 := "eff2"
-pic_minline := "umi"
-pic_maxline := "uma"
-pic_effline := "uef"
 
 Hotkey, !Numpad0, Termination, On
 Hotkey, !Numpad1, Calibrate, On
-Hotkey, !Numpad2, %testing%, On
+Hotkey, !Numpad2, CurrentStatus, On
 Hotkey, !Numpad3, MainRoutine, On
 Hotkey, !Numpad4, Recalibrate, On
 return
@@ -130,8 +57,32 @@ Termination() ; funTermination
 	ExitApp
 }
 
-; Reset all variable (which need resetting), /!\ should replace var list at the top
-CleanAllGlobalVar() ; fun CleanAllGlobalVar
+; Display current status
+CurrentStatus() ; funCurrentStatus
+{
+	global effects_index, locations_index, floors_index, final_floors_index, tolerances_index, max_index, min_index, vef_index, def_index
+		, instructions_index, modif_max_index, reliquat, more_additional_index, trash_bin, destroyer_effect, reliquat_exception
+	item_status := ""
+	For index, final_floors in def_index
+	{
+		item_status := item_status . "///" . final_floors . "___" . vef_index[index] . "___" . min_index[index] . "___" . max_index[index] . "___" . modif_max_index[index]
+		For _priority, value in more_additional_index
+		{
+			item_status := item_status . "___" . value[index]
+		}
+	}
+	item_status := item_status . "///reliquat___" . reliquat
+	For index, trash in trash_bin
+	{
+		item_status := item_status . "///trash___" . trash
+	}
+	item_status := item_status . "///destroyer___" . destroyer_effect
+	item_status := item_status . "///reliquat exception___" . reliquat_exception
+	MsgBox, %item_status%
+}
+
+; Reset all variable
+CleanAllGlobalVar() ; funCleanAllGlobalVar
 {
 	global mage_id_w, height_5_4, width_5_4, width_5_4, x_5_4_s, y_5_4_s, hex_color_rune, hex_color_fusion, hex_color_inventory
 		, effects_index, key_rune, key_blank, key_pa, key_ra, key_pwr, locations_index, key_x, key_y, floors_index, key_stdfloors
@@ -176,7 +127,7 @@ CleanAllGlobalVar() ; fun CleanAllGlobalVar
 	instructions_index := []
 	key_effects := ""
 	key_values := ""
-	
+
 	corrections_index := {}
 
 	min_index := []
