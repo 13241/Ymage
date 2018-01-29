@@ -28,11 +28,12 @@ CoordMode, Mouse, Screen ; fix default coordinates for mouse operations to those
 CoordMode, Pixel, Screen ; fix default coordinates for pixel operations to those from the screen
 
 
-Hotkey, !Numpad0, Termination, On
+Hotkey, !Numpad0, Reloading, On
 Hotkey, !Numpad1, Calibrate, On
 Hotkey, !Numpad2, CurrentStatus, On
 Hotkey, !Numpad3, MainRoutine, On
 Hotkey, !Numpad4, Recalibrate, On
+Hotkey, !Numpad5, Termination, On
 return
 
 ; functions
@@ -55,6 +56,17 @@ Termination() ; funTermination
 	HideTrayTip()
 	TrayTip, , Exiting App
 	ExitApp
+}
+
+; Reload app
+Reloading() ; funReloading
+{
+	HideTrayTip()
+	TrayTip, , Reloading App
+	Reload
+	Sleep, 1000
+	MsgBox, The script could not be reloaded
+	Termination()
 }
 
 ; Display current status
@@ -1714,11 +1726,6 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 		}
 		return [value, effect]
 	}
-}
-
-WriteData() ; funWriteData
-{
-	
 }
 
 UseRune(value, effect) ; funUseRune 
