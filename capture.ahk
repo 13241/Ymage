@@ -73,8 +73,9 @@ Reloading() ; funReloading
 CurrentStatus() ; funCurrentStatus
 {
 	global effects_index, locations_index, floors_index, final_floors_index, tolerances_index, max_index, min_index, vef_index, def_index
-		, instructions_index, modif_max_index, reliquat, more_additional_index, trash_bin, destroyer_effect, reliquat_exception
-	item_status := ""
+		, instructions_index, modif_max_index, reliquat, more_additional_index, trash_bin, destroyer_effect, reliquat_exception, item_level
+		, item_name
+	item_status := item_name . " : " . item_level . " => "
 	For index, final_floors in def_index
 	{
 		item_status := item_status . "///" . final_floors . "___" . vef_index[index] . "___" . min_index[index] . "___" . max_index[index] . "___" . modif_max_index[index]
@@ -102,7 +103,7 @@ CleanAllGlobalVar() ; funCleanAllGlobalVar
 		, instructions_index, key_effects, key_values, min_index, max_index, vef_index, def_index, modif_max_index, more_additional_index
 		, trash_exception, current_trash, trash_bin, destroyer_effect, last_history, reliquat_exception, auto_bypass, over_index
 		, reliquat, rf_runes, rf_coordinates, rf_floors, rf_final_floors, rf_over_floors, rf_instructions, pic_min, pic_max, pic_effect
-		, pic_effline, pic_min_2, pic_max_2, pic_effect_2, pic_minline, pic_maxline, corrections_index
+		, pic_effline, pic_min_2, pic_max_2, pic_effect_2, pic_minline, pic_maxline, corrections_index, item_level, item_name, pic_lvl
 	mage_id_w := ""
 	height_5_4 := 0
 	width_5_4 := 0
@@ -157,6 +158,9 @@ CleanAllGlobalVar() ; funCleanAllGlobalVar
 	auto_bypass := true
 	over_index := 0
 	reliquat := 0
+	
+	item_level := 0
+	item_name := ""
 
 	rf_runes := "data/runes.csv"
 	rf_coordinates := "data/coordinates.csv"
@@ -173,6 +177,7 @@ CleanAllGlobalVar() ; funCleanAllGlobalVar
 	pic_min_2 := "min2"
 	pic_max_2 := "max2"
 	pic_effect_2 := "eff2"
+	pic_lvl := "lvl"
 }
 
 ; 
@@ -211,6 +216,8 @@ Calibrate() ; funCalibrate
 	ReadFile(rf_final_floors, "AddToFinalFloors_Tolerances_Index")
 	ReadFile(rf_over_floors, "AddToOverFloors_Tolerances_Index")
 	ReadFile(rf_instructions, "AddToInstructions_Index")
+	
+	CaptureItemIds()
 	
 	key_color_xy := "col_xy"
 	x_no_rune := ConvertToPx(x_5_4_s, locations_index[key_color_xy][key_x], width_5_4)
@@ -301,7 +308,68 @@ Calibrate() ; funCalibrate
 	CalibrateInstructions()
 }
 
-CaptureHiddenLines(new_item := true) ; funCaptureHiddenLines ; here
+CaptureItemIds() ; funCaptureItemIds
+{
+	global locations_index, x_5_4_s, width_5_4, key_x, key_y, y_5_4_s, height_5_4, pic_lvl, item_level, item_name
+	key_xy_chat := "cht_xy"
+	key_xy_item := "itm_xy"
+	x_chat := ConvertToPx(x_5_4_s, locations_index[key_xy_chat][key_x], width_5_4)
+	y_chat := ConvertToPx(y_5_4_s, locations_index[key_xy_chat][key_y], height_5_4)
+	x_item := ConvertToPx(x_5_4_s, locations_index[key_xy_item][key_x], width_5_4)
+	y_item := ConvertToPx(y_5_4_s, locations_index[key_xy_item][key_y], height_5_4)
+	
+	SendInput {Click %x_chat% %y_chat% 3}
+	SendInput {BackSpace}
+	
+	SendInput {Shift Down}
+	SendInput {Click %x_item% %y_item%}
+	SendInput {Shift Up}
+	
+	SendInput {Click %x_chat% %y_chat% 3}
+	
+	clipboard=
+	SendInput ^{c}
+	ClipWait, 0
+	counter := 0
+	while(ErrorLevel)
+	{
+		ClipWait, 0
+		if(Mod(counter, 20) = 0)
+		{
+			SendInput {Click %x_chat% %y_chat% 3}
+			SendInput ^{c}
+		}
+		counter := counter + 1
+	}
+	item_name := clipboard
+	
+	bracket_open := "["
+	bracket_close := "]"
+	StringReplace, item_name, item_name, %bracket_open%, , All
+	StringReplace, item_name, item_name, %bracket_close%, , All
+	
+	SendInput {Click Right %x_item% %y_item%}
+	Sleep, 100
+	SendInput {Down}
+	Sleep, 100
+	SendInput {Enter}
+	Sleep, 500
+	
+	CaptureImage(pic_lvl)
+	
+	item_level := ApplyOcr(pic_lvl)
+	
+	SendInput {Escape}
+	
+	comma := ","
+	niv := "Niv."
+	espace := " "
+	StringReplace, item_level, item_level, %comma%, , All
+	StringReplace, item_level, item_level, %niv%, , All
+	StringReplace, item_level, item_level, %espace%, , All
+}
+
+CaptureHiddenLines(new_item := true) ; funCaptureHiddenLines
 {
 	global locations_index, x_5_4_s, width_5_4, key_x, key_y, y_5_4_s, height_5_4, pic_min_2, pic_max_2, pic_effect_2
 		, min_index, max_index, vef_index, def_index
@@ -388,7 +456,7 @@ CaptureHiddenLines(new_item := true) ; funCaptureHiddenLines ; here
 	}
 }
 
-Recalibrate(new_item := false) ; funRecalibrate
+Recalibrate(new_item := false) ; funRecalibrate ; a supprimer
 {
 	global reliquat, pic_min, pic_max, pic_effect, min_index, max_index, vef_index, def_index
 		, trash_exception, current_trash, trash_bin, rf_floors, rf_final_floors, rf_instructions, auto_bypass, modif_max_index
