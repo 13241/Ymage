@@ -15,6 +15,8 @@ Class dbhandler
 	
 	last_ids := {}
 	
+	current_item_id := 0
+	
 	Connect() ; funConnect
 	{
 		connectionString := "Server=localhost;Port=3306;Database=ymage;Uid=root;Pwd=;"
@@ -58,8 +60,6 @@ Class dbhandler
 		{
 			if(row["max"] != "")
 			{
-				wazaa := row["max"]
-				MsgBox, %wazaa%
 				return row["max"]
 			}
 			else
@@ -70,5 +70,59 @@ Class dbhandler
 		}
 	}
 	
+	ItemExists(name) ; funItemExists
+	{
+		sql=
+		(
+		SELECT id
+		FROM items
+		WHERE name = %name%
+		)
+		selection := this.db.Query(sql)
+		For index, row in selection.Rows
+		{
+			if(row["id"] != "")
+			{
+				this.current_item_id := row["id"]
+				return row["id"]
+			}
+			else
+			{
+				return 0
+			}
+		}
+	}
 	
+	ItemIdentification(name, level) ; funItemIdentification
+	{
+		if(this.ItemExists(name) = 0)
+		{
+			item_id := this.last_ids["items"] + 1
+			this.items[item_id] := {}
+			this.items[item_id]["id"] := item_id
+			this.items[item_id]["name"] := name
+			this.items[item_id]["level"] := level
+		}
+	}
+	
+	ItemMaxEffectsIdentification(max_pwr_dic) ; funItemMaxEffectsIdentification
+	{
+		item_id := this.last_ids["items"] + 1
+		if(this.current_item_id != 0)
+		{
+			item_id := this.current_item_id
+		}
+		totalPwr := 0
+		For effect, pwr in max_pwr_dic
+		{
+			effect_id := this.effects[effect]["id"]
+			unique_id := item_id . "" . effect_id
+			this.itemseffects[unique_id] := {}
+			this.itemseffects[unique_id]["idItem"] := item_id
+			this.itemseffects[unique_id]["idEffect"] := effect_id
+			this.itemseffects[unique_id]["maxPwr"] := pwr
+			totalPwr := totalPwr + pwr
+		}
+		this.items[item_id]["maxPwr"] := totalPwr
+	}
 }
