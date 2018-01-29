@@ -18,6 +18,7 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 #Persistent
 #Include libraries/GDIP/GDIP.ahk
+#Include libraries/DbHandler/DbHandler.ahk
 
 ; initialization
 
@@ -34,6 +35,7 @@ Hotkey, !Numpad2, CurrentStatus, On
 Hotkey, !Numpad3, MainRoutine, On
 Hotkey, !Numpad4, Recalibrate, On
 Hotkey, !Numpad5, Termination, On
+Hotkey, !Numpad6, TestDbHandler, On ; keytest
 return
 
 ; functions
@@ -104,6 +106,7 @@ CleanAllGlobalVar() ; funCleanAllGlobalVar
 		, trash_exception, current_trash, trash_bin, destroyer_effect, last_history, reliquat_exception, auto_bypass, over_index
 		, reliquat, rf_runes, rf_coordinates, rf_floors, rf_final_floors, rf_over_floors, rf_instructions, pic_min, pic_max, pic_effect
 		, pic_effline, pic_min_2, pic_max_2, pic_effect_2, pic_minline, pic_maxline, corrections_index, item_level, item_name, pic_lvl
+		, dbhandler
 	mage_id_w := ""
 	height_5_4 := 0
 	width_5_4 := 0
@@ -178,6 +181,14 @@ CleanAllGlobalVar() ; funCleanAllGlobalVar
 	pic_max_2 := "max2"
 	pic_effect_2 := "eff2"
 	pic_lvl := "lvl"
+	
+	dbhandler := new dbhandler
+	dbhandler.Connect()
+}
+
+TestDbHandler() ; funtest
+{
+	CleanAllGlobalVar()
 }
 
 ; 
