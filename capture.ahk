@@ -1322,7 +1322,7 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 	return last_line
 }
 
-ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
+ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges ; here
 {
 	global reliquat, vef_index, def_index, min_index, max_index, modif_max_index, more_additional_index
 		, instructions_index, key_effects, effects_index, locations_index, key_x, key_y, x_5_4_s, y_5_4_s
@@ -1332,6 +1332,18 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 	{
 		lines_changes := CaptureLastAttemptHistory() ; yolo (on assume que si on est arrivé ici, la fusion de rune a eu lieu)
 	}
+	; tracingChanges si on arrive ici, on peut capturer les infos courantes de l'objet
+	; à ce stade, la fonction peut "echouer", il ne faut ici capturer que le statut (sc, ec, sn)
+	; tester si line_changes contient "Échec" => sn (echange equivalent complet (la rune s'ajoute en retirant sa propre stats)
+	; tester si line_changes contient "+reliquat" => compter les virgules
+	; 	n_virgule = "-" => ec
+	;	n_virgule - 1 = "-" => sn
+	; tester si line_changes contient "-reliquat" => compter les virgules
+	; 	n_virgule + 1 = "-" => ec
+	; 	n_virgule = "-" => sn
+	; si n_virgule = 0 => sc
+	; sinon => sn (echange equivalent partiel)
+	; result est donc determinable ici
 	line_changes := lines_changes[1]
 	changes := StrSplit(line_changes, ", ")
 	found_reliquat := false
@@ -1438,8 +1450,14 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 			}
 		}
 	}
+	; tracingChanges si on arrive ici, on peut envoyer les infos en database, on calcule la majorité des infos quand la fonction ne peut plus "echouer"
+	; currentPwrItem
+	; effect (à reconvertir)
+	; currentReliquat
+	; attemptedPwrEffect (=currentpwr + runepwr)
 	For i_tampon_change, tampon_change in tampon_changes
 	{
+		; tracingChanges on peut capturer pwrBefore
 		if(tampon_change["operation"] = "remove")
 		{
 			max_index.RemoveAt(i_tampon_change)
@@ -1451,14 +1469,17 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 			{
 				objective.RemoveAt(i_tampon_change)
 			}
+			; tracingChanges pwrAfter vaut 0
 		}
 		else
 		{
 			vef_index[i_tampon_change] := vef_index[i_tampon_change] + tampon_change["value"]
+			; tracingChanges on peut capturer pwrAfter
 		}
 	}
 	For push_index, push in pushed_effects
 	{
+		; tracingChanges pwrBefore vaut 0
 		vef_index.Push(push["value"])
 		def_index.Push(push["effect"])
 		min_index.Push(0)
@@ -1468,6 +1489,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 		{
 			objective[_priority].Push(0)
 		}
+		; tracingChanges on peut capturer pwrAfter
 	}
 	if(found_reliquat)
 	{
