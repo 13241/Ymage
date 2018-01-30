@@ -198,7 +198,7 @@ Calibrate() ; funCalibrate
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index, def_index
 		, rf_runes, rf_coordinates, rf_floors, rf_final_floors, rf_instructions, pic_min, pic_max, pic_effect
 		, hex_color_rune, hex_color_fusion, hex_color_inventory, locations_index, key_x, key_y, pic_min_2, pic_max_2
-		, pic_effect_2, rf_over_floors
+		, pic_effect_2, rf_over_floors, item_level, item_name, dbhandler
 	CleanAllGlobalVar()
 	
 	SysGet, width_margin_w, 32 ; window resizable zone, horizontal size
@@ -228,7 +228,10 @@ Calibrate() ; funCalibrate
 	ReadFile(rf_over_floors, "AddToOverFloors_Tolerances_Index")
 	ReadFile(rf_instructions, "AddToInstructions_Index")
 	
+	
 	CaptureItemIds()
+	; dbhandler
+	dbhandler.ItemIdentification(item_name, item_level)
 	
 	key_color_xy := "col_xy"
 	x_no_rune := ConvertToPx(x_5_4_s, locations_index[key_color_xy][key_x], width_5_4)
@@ -317,6 +320,27 @@ Calibrate() ; funCalibrate
 	CaptureHiddenLines()
 	
 	CalibrateInstructions()
+	
+	RegisterMaxPwrItemEffects()
+}
+
+RegisterMaxPwrItemEffects() ; funRegisterMaxPwrItemEffects
+{
+	global max_index, min_index, def_index, dbhandler
+		
+	max_pwr_dic := {}
+	For index, def in def_index
+	{
+		if(max_index[index] != 0 and min_index[index] != 0)
+		{
+			pwr := -1 * ConvertToReliquat(max_index[index], def, 0)
+			max_pwr_dic[def] := pwr
+		}
+	}
+	
+	; dbhandler
+	dbhandler.ItemEffectsIdentification(max_pwr_dic)
+	dbhandler.InsertItems() ; MODIFIER
 }
 
 CaptureItemIds() ; funCaptureItemIds
@@ -358,6 +382,9 @@ CaptureItemIds() ; funCaptureItemIds
 	bracket_close := "]"
 	StringReplace, item_name, item_name, %bracket_open%, , All
 	StringReplace, item_name, item_name, %bracket_close%, , All
+	
+	SendInput {Click %x_chat% %y_chat% 3}
+	SendInput {BackSpace}
 	
 	SendInput {Click Right %x_item% %y_item%}
 	Sleep, 100
@@ -1495,7 +1522,7 @@ GetNeededReliquat(objective) ; funGetNeededReliquat
 	final_reliquat := 0
 	For index, value in objective
 	{
-		if(def_index[index] != "Prospection" and effects_index[def_index[index]][key_pwr] < reliquat)
+		if(def_index[index] != "Prospection" and effects_index[def_index[index]][key_pwr] < reliquat) ; yolo doit tenir compte des trash autre que prospection
 		{
 			current_reliquat := current_reliquat + ConvertToReliquat(vef_index[index], def_index[index], 0)
 			final_reliquat := final_reliquat + ConvertToReliquat(value, def_index[index], 0)

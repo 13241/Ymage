@@ -62,12 +62,8 @@ Class dbhandler
 			{
 				return row["max"]
 			}
-			else
-			{
-				MsgBox, 0
-				return 0
-			}
 		}
+		return 0
 	}
 	
 	ItemExists(name) ; funItemExists
@@ -76,7 +72,7 @@ Class dbhandler
 		(
 		SELECT id
 		FROM items
-		WHERE name = %name%
+		WHERE name = "%name%"
 		)
 		selection := this.db.Query(sql)
 		For index, row in selection.Rows
@@ -86,16 +82,14 @@ Class dbhandler
 				this.current_item_id := row["id"]
 				return row["id"]
 			}
-			else
-			{
-				return 0
-			}
 		}
+		return 0
 	}
 	
 	ItemIdentification(name, level) ; funItemIdentification
 	{
-		if(this.ItemExists(name) = 0)
+		item_exists := this.ItemExists(name)
+		if(item_exists = 0)
 		{
 			item_id := this.last_ids["items"] + 1
 			this.items[item_id] := {}
@@ -105,24 +99,36 @@ Class dbhandler
 		}
 	}
 	
-	ItemMaxEffectsIdentification(max_pwr_dic) ; funItemMaxEffectsIdentification
+	ItemEffectsIdentification(max_pwr_dic) ; funItemEffectsIdentification
 	{
 		item_id := this.last_ids["items"] + 1
-		if(this.current_item_id != 0)
+		if(this.current_item_id = 0)
 		{
-			item_id := this.current_item_id
+			totalPwr := 0
+			For effect, pwr in max_pwr_dic
+			{
+				effect_id := this.effects[effect]["id"]
+				unique_id := item_id . "" . effect_id
+				this.itemseffects[unique_id] := {}
+				this.itemseffects[unique_id]["idItem"] := item_id
+				this.itemseffects[unique_id]["idEffect"] := effect_id
+				this.itemseffects[unique_id]["maxPwr"] := pwr
+				totalPwr := totalPwr + pwr
+			}
+			this.items[item_id]["maxPwr"] := totalPwr
 		}
-		totalPwr := 0
-		For effect, pwr in max_pwr_dic
+	}
+	
+	InsertItems()
+	{
+		if(this.current_item_id = 0)
 		{
-			effect_id := this.effects[effect]["id"]
-			unique_id := item_id . "" . effect_id
-			this.itemseffects[unique_id] := {}
-			this.itemseffects[unique_id]["idItem"] := item_id
-			this.itemseffects[unique_id]["idEffect"] := effect_id
-			this.itemseffects[unique_id]["maxPwr"] := pwr
-			totalPwr := totalPwr + pwr
+			items_collection := new Collection()
+			items_collection.AddRange(this.items)
+			this.db.InsertMany(items_collection, "items")
+			itemseffects_collection := new Collection()
+			itemseffects_collection.AddRange(this.itemseffects)
+			this.db.InsertMany(itemseffects_collection, "itemseffects")
 		}
-		this.items[item_id]["maxPwr"] := totalPwr
 	}
 }

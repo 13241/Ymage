@@ -128,7 +128,7 @@ class DataBaseMySQL extends DBA.DataBase
 	}
 	
 	InsertMany(records, tableName){
-		
+	
 		if(!is(records, Collection) || records.IsEmpty())
 			return false
 		
