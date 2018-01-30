@@ -1,7 +1,7 @@
 ﻿; Documentation
 
 
-#Include libraries/db/DBA.ahk
+#Include %A_LineFile%\..\..\db\DBA.ahk
 
 Class dbhandler
 {

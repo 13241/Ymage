@@ -17,8 +17,8 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ; force maximalize window for most accurate resolution
 
 #Persistent
-#Include libraries/GDIP/GDIP.ahk
-#Include libraries/DbHandler/DbHandler.ahk
+#Include %A_LineFile%\..\libraries\GDIP\GDIP.ahk
+#Include %A_LineFile%\..\libraries\DbHandler\DbHandler.ahk
 
 ; initialization
 
