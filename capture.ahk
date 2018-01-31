@@ -327,7 +327,6 @@ Calibrate() ; funCalibrate
 RegisterMaxPwrItemEffects() ; funRegisterMaxPwrItemEffects
 {
 	global max_index, min_index, def_index, dbhandler
-		
 	max_pwr_dic := {}
 	For index, def in def_index
 	{
@@ -340,7 +339,18 @@ RegisterMaxPwrItemEffects() ; funRegisterMaxPwrItemEffects
 	
 	; dbhandler
 	dbhandler.ItemEffectsIdentification(max_pwr_dic)
-	dbhandler.InsertItems() ; MODIFIER
+	dbhandler.InsertItem() ; MODIFIER
+}
+
+CurrentPwrItem() ; funCurrentPwrItem
+{
+	global vef_index, def_index
+	pwr := 0
+	For index, def in def_index
+	{
+		pwr := -1 * ConvertToReliquat(vef_index[index], def, 0) + pwr
+	}
+	return pwr
 }
 
 CaptureItemIds() ; funCaptureItemIds
@@ -1387,11 +1397,11 @@ AttemptResult(line) ; funAttemptStatus
 	return line_status
 }
 
-ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges ; here
+ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 {
 	global reliquat, vef_index, def_index, min_index, max_index, modif_max_index, more_additional_index
 		, instructions_index, key_effects, effects_index, locations_index, key_x, key_y, x_5_4_s, y_5_4_s
-		, width_5_4, height_5_4, hex_color_rune
+		, width_5_4, height_5_4, hex_color_rune, dbhandler
 	lines_changes := CaptureLastAttemptHistory()
 	while(lines_changes.Length() = 0)
 	{
@@ -1409,6 +1419,19 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges ; he
 	tampon_reliquat := 0
 	tampon_changes := {}
 	pushed_effects := []
+	
+	; attemptedPwrEffect (=runepwr based on current value)
+	index_attempt := HasValue(def_index, attempt_effect)
+	attempt_attemptedPwrEffect := 0
+	if(index_attempt != 0)
+	{
+		attempt_attemptedPwrEffect := -1 * ConvertToReliquat(attempt_value, attempt_effect, vef_index[index_attempt])
+	}
+	else
+	{
+		attempt_attemptedPwrEffect := -1 * ConvertToReliquat(attempt_value, attempt_effect, 0)
+	}
+	
 	For index, change in changes
 	{
 		if(change = "Échec")
@@ -1417,15 +1440,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges ; he
 		}
 		else if(InStr(change, "reliquat"))
 		{
-			index_attempt := HasValue(def_index, attempt_effect)
-			if(index_attempt != 0)
-			{
-				tampon_reliquat := tampon_reliquat + ConvertToReliquat(attempt_value, attempt_effect, vef_index[index_attempt])
-			}
-			else
-			{
-				tampon_reliquat := tampon_reliquat + ConvertToReliquat(attempt_value, attempt_effect, 0)
-			}
+			tampon_reliquat := tampon_reliquat - attempt_attemptedPwrEffect
 			found_reliquat := true
 		}
 		else
@@ -1511,12 +1526,26 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges ; he
 	}
 	; tracingChanges si on arrive ici, on peut envoyer les infos en database, on calcule la majorité des infos quand la fonction ne peut plus "echouer"
 	; currentPwrItem
-	; effect (à reconvertir)
-	; currentReliquat
-	; attemptedPwrEffect (=currentpwr + runepwr)
+	; effect (à reconvertir) => attempt_effect
+	; currentReliquat => reliquat
+	attempt_currentPwrItem := CurrentPwrItem()
+	
+	; dbhandler
+	attempt_id := dbhandler.AddAttempt(attempt_effect, reliquat, attempt_attemptedPwrEffect, attempt_currentPwrItem, attempt_result)
+	
+	found_attempt_effect := false
+	attempt_effect_pwrBefore := -1 * ConvertToReliquat(vef_index[index_attempt], attempt_effect, 0)
+	
 	For i_tampon_change, tampon_change in tampon_changes
 	{
+		if(tampon_change["effect"] = attempt_effect)
+		{
+			found_attempt_effect := true
+		}
 		; tracingChanges on peut capturer pwrBefore
+		effect_pwrBefore := -1 * ConvertToReliquat(vef_index[i_tampon_change], tampon_change["effect"], 0)
+		effect_pwrAfter := 0
+		
 		if(tampon_change["operation"] = "remove")
 		{
 			max_index.RemoveAt(i_tampon_change)
@@ -1534,11 +1563,21 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges ; he
 		{
 			vef_index[i_tampon_change] := vef_index[i_tampon_change] + tampon_change["value"]
 			; tracingChanges on peut capturer pwrAfter
+			effect_pwrAfter := -1 * ConvertToReliquat(vef_index[i_tampon_change], tampon_change["effect"], 0)
 		}
+		
+		; dbhandler
+		dbhandler.AddChangeOnAttempt(attempt_id, tampon_change["effect"], effect_pwrBefore, effect_pwrAfter)
 	}
 	For push_index, push in pushed_effects
 	{
+		if(push["effect"] = attempt_effect)
+		{
+			found_attempt_effect := true
+		}
 		; tracingChanges pwrBefore vaut 0
+		effect_pwrBefore := 0
+		
 		vef_index.Push(push["value"])
 		def_index.Push(push["effect"])
 		min_index.Push(0)
@@ -1549,6 +1588,10 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges ; he
 			objective[_priority].Push(0)
 		}
 		; tracingChanges on peut capturer pwrAfter
+		effect_pwrAfter := -1 * ConvertToReliquat(push["value"], push["effect"], 0)
+		
+		; dbhandler
+		dbhandler.AddChangeOnAttempt(attempt_id, push["effect"], effect_pwrBefore, effect_pwrAfter)
 	}
 	if(found_reliquat)
 	{
@@ -1557,6 +1600,18 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges ; he
 		{
 			reliquat := 0
 		}
+	}
+	
+	if(!found_attempt_effect)
+	{
+		; dbhandler
+		dbhandler.AddChangeOnAttempt(attempt_id, attempt_effect, attempt_effect_pwrBefore, attempt_effect_pwrBefore)
+	}
+	
+	; dbhandler
+	if(dbhandler.AttemptsCount != 0 and Mod(dbhandler.AttemptsCount, 10) = 0)
+	{
+		dbhandler.InsertAttempts()
 	}
 }
 
