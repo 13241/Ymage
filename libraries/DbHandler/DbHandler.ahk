@@ -129,7 +129,7 @@ Class dbhandler
 	{
 		if(this.current_item_id = this.last_ids["items"] + 1)
 		{
-			this.db.Insert(item, "items")
+			this.db.Insert(this.item, "items")
 			itemeffects_collection := new Collection()
 			itemeffects_collection.AddRange(this.itemeffects)
 			this.db.InsertMany(itemeffects_collection, "itemseffects")

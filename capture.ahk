@@ -35,7 +35,7 @@ Hotkey, !Numpad2, CurrentStatus, On
 Hotkey, !Numpad3, MainRoutine, On
 Hotkey, !Numpad4, Recalibrate, On
 Hotkey, !Numpad5, Termination, On
-Hotkey, !Numpad6, TestDbHandler, On ; keytest
+Hotkey, !Numpad6, ConnectDatabase, On ; keytest
 return
 
 ; functions
@@ -76,7 +76,7 @@ CurrentStatus() ; funCurrentStatus
 {
 	global effects_index, locations_index, floors_index, final_floors_index, tolerances_index, max_index, min_index, vef_index, def_index
 		, instructions_index, modif_max_index, reliquat, more_additional_index, trash_bin, destroyer_effect, reliquat_exception, item_level
-		, item_name
+		, item_name, dbhandler
 	item_status := item_name . " : " . item_level . " => "
 	For index, final_floors in def_index
 	{
@@ -93,7 +93,9 @@ CurrentStatus() ; funCurrentStatus
 	}
 	item_status := item_status . "///destroyer___" . destroyer_effect
 	item_status := item_status . "///reliquat exception___" . reliquat_exception
-	MsgBox, %item_status%
+	MsgBox, 4, , %item_status% Insert into database?
+	IfMsgBox Yes
+		dbhandler.InsertItem() ; MODIFIER		
 }
 
 ; Reset all variable
@@ -186,7 +188,7 @@ CleanAllGlobalVar() ; funCleanAllGlobalVar
 	dbhandler.Connect()
 }
 
-TestDbHandler() ; funtest
+ConnectDatabase() ; funConnectDatabase
 {
 	CleanAllGlobalVar()
 }
@@ -339,7 +341,6 @@ RegisterMaxPwrItemEffects() ; funRegisterMaxPwrItemEffects
 	
 	; dbhandler
 	dbhandler.ItemEffectsIdentification(max_pwr_dic)
-	dbhandler.InsertItem() ; MODIFIER
 }
 
 CurrentPwrItem() ; funCurrentPwrItem
