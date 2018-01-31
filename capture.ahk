@@ -1322,6 +1322,71 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 	return last_line
 }
 
+AttemptResult(line) ; funAttemptStatus
+{
+	; tester si line contient "Échec" => sn (echange equivalent complet (la rune s'ajoute en retirant sa propre stats)
+	; tester si line contient "+reliquat" => compter les virgules
+	; 	n_virgule = "-" => ec
+	;	n_virgule - 1 = "-" => sn
+	; tester si line contient "-reliquat" => compter les virgules
+	; 	n_virgule + 1 = "-" => ec
+	; 	n_virgule = "-" => sn
+	; tester si n_virgule = 0 => sc
+	; sinon => sn (echange equivalent partiel)
+	line_status := ""
+	comma := ","
+	minus := "-"
+	StringReplace, line, line, %comma%, %comma%, UseErrorLevel
+	n_commas := ErrorLevel
+	if(InStr(line, "Échec"))
+	{
+		line_status := "ns"
+	}
+	else if(InStr(line, "+reliquat"))
+	{
+		StringReplace, line, line, %minus%, %minus%, UseErrorLevel
+		n_minus := ErrorLevel
+		if(n_minus = n_commas)
+		{
+			line_status := "ce"
+		}
+		else if(n_commas - 1 = n_minus)
+		{
+			line_status := "ns"
+		}
+		else
+		{
+			MsgBox, Error : %line% : %n_minus% %minus% and %n_commas% %comma%
+		}
+	}
+	else if(InStr(line, "-reliquat"))
+	{
+		StringReplace, line, line, %minus%, %minus%, UseErrorLevel
+		n_minus := ErrorLevel
+		if(n_commas + 1 = n_minus)
+		{
+			line_status := "ce"
+		}
+		else if(n_commas = n_minus)
+		{
+			line_status := "ns"
+		}
+		else
+		{
+			MsgBox, Error : %line% : %n_minus% %minus% and %n_commas% %comma%
+		}
+	}
+	else if(n_commas = 0)
+	{
+		line_status := "cs"
+	}
+	else
+	{
+		line_status := "ns"
+	}
+	return line_status
+}
+
 ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges ; here
 {
 	global reliquat, vef_index, def_index, min_index, max_index, modif_max_index, more_additional_index
@@ -1332,19 +1397,13 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges ; he
 	{
 		lines_changes := CaptureLastAttemptHistory() ; yolo (on assume que si on est arrivé ici, la fusion de rune a eu lieu)
 	}
+	
+	line_changes := lines_changes[1]
 	; tracingChanges si on arrive ici, on peut capturer les infos courantes de l'objet
 	; à ce stade, la fonction peut "echouer", il ne faut ici capturer que le statut (sc, ec, sn)
-	; tester si line_changes contient "Échec" => sn (echange equivalent complet (la rune s'ajoute en retirant sa propre stats)
-	; tester si line_changes contient "+reliquat" => compter les virgules
-	; 	n_virgule = "-" => ec
-	;	n_virgule - 1 = "-" => sn
-	; tester si line_changes contient "-reliquat" => compter les virgules
-	; 	n_virgule + 1 = "-" => ec
-	; 	n_virgule = "-" => sn
-	; si n_virgule = 0 => sc
-	; sinon => sn (echange equivalent partiel)
 	; result est donc determinable ici
-	line_changes := lines_changes[1]
+	attempt_result := AttemptResult(line_changes)
+	
 	changes := StrSplit(line_changes, ", ")
 	found_reliquat := false
 	tampon_reliquat := 0
