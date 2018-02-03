@@ -1,0 +1,24 @@
+succès critique :
+	gain pas Échec
+	pas de -
+succès neutre :
+	Échec
+	
+	pas de gain/gain partiel
+	bilan stats perdues < poids rune
+	+reliquat
+	
+	gain pas Échec
+	au moins un -
+échec critique : 
+	pas de gain
+	bilan stats perdue <= poids rune
+	pas reliquat
+	
+	pas de gain
+	bilan stats perdue < poids de rune
+	-reliquat
+	
+	pas de gain
+	bilan stats perdue > poids de rune
+	+reliquat

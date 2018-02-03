@@ -15,6 +15,14 @@ procédure /ping
 
 # affinement du comportement :
 
+REMARQUE : DANS LE CAS OU IL N'Y A PLUS DE RELIQUAT SUR L'OBJET, ECHEC CRITIQUE ET SUCCES NEUTRE SONT CONFONDUS
+
+problème : si l'historique est réellement constitué uniquement d'échecs, le programme bug.
+
+problème : si l'objectif est un over, dans certaines phases il détruit l'over avant d'arriver dans la phase objectif (stupide)
+
+problème : considère le jet fini en cas de gros over sous reliquat exception et ne remet pas le pa (présent de base sur le jet) (voir si bon usage de reliquat exception... :p)
+
 problème : tente over puissance
 
 faille lag => perte du jet courant

@@ -35,7 +35,8 @@ Hotkey, !Numpad2, CurrentStatus, On
 Hotkey, !Numpad3, MainRoutine, On
 Hotkey, !Numpad4, Recalibrate, On
 Hotkey, !Numpad5, Termination, On
-Hotkey, !Numpad6, ConnectDatabase, On ; keytest
+Hotkey, !Numpad6, TestEncoding, On ; keytest
+Hotkey, !Numpad7, ForceInsertAttempts, On
 return
 
 ; functions
@@ -71,6 +72,12 @@ Reloading() ; funReloading
 	Termination()
 }
 
+TestEncoding() ; funTestEncoding
+{
+	special := "éÈÉàÁÀ"
+	MsgBox, test valid encoding : %special% éÈÉàÁÀ should be eEEaAA eEEaAA with all kind of accents : if not please convert to ISO-8859-1
+}
+
 ; Display current status
 CurrentStatus() ; funCurrentStatus
 {
@@ -95,7 +102,7 @@ CurrentStatus() ; funCurrentStatus
 	item_status := item_status . "///reliquat exception___" . reliquat_exception
 	MsgBox, 4, , %item_status% Insert into database?
 	IfMsgBox Yes
-		dbhandler.InsertItem() ; MODIFIER		
+		dbhandler.InsertItem() ; MODIFIER
 }
 
 ; Reset all variable
@@ -188,9 +195,12 @@ CleanAllGlobalVar() ; funCleanAllGlobalVar
 	dbhandler.Connect()
 }
 
-ConnectDatabase() ; funConnectDatabase
+ForceInsertAttempts() ; funForceInsertAttempts
 {
-	CleanAllGlobalVar()
+	global dbhandler
+	MsgBox, 4, , Insert attempts into database?
+	IfMsgBox Yes
+		dbhandler.InsertAttempts()
 }
 
 ; 
@@ -229,7 +239,6 @@ Calibrate() ; funCalibrate
 	ReadFile(rf_final_floors, "AddToFinalFloors_Tolerances_Index")
 	ReadFile(rf_over_floors, "AddToOverFloors_Tolerances_Index")
 	ReadFile(rf_instructions, "AddToInstructions_Index")
-	
 	
 	CaptureItemIds()
 	; dbhandler
@@ -1333,7 +1342,7 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 	return last_line
 }
 
-AttemptResult(line) ; funAttemptStatus
+AttemptResult(line) ; funAttemptResult
 {
 	; tester si line contient "Échec" => sn (echange equivalent complet (la rune s'ajoute en retirant sa propre stats)
 	; tester si line contient "+reliquat" => compter les virgules
@@ -1349,19 +1358,19 @@ AttemptResult(line) ; funAttemptStatus
 	minus := "-"
 	StringReplace, line, line, %comma%, %comma%, UseErrorLevel
 	n_commas := ErrorLevel
+	StringReplace, line, line, %minus%, %minus%, UseErrorLevel
+	n_minus := ErrorLevel
 	if(InStr(line, "Échec"))
 	{
 		line_status := "ns"
 	}
 	else if(InStr(line, "+reliquat"))
 	{
-		StringReplace, line, line, %minus%, %minus%, UseErrorLevel
-		n_minus := ErrorLevel
 		if(n_minus = n_commas)
 		{
 			line_status := "ce"
 		}
-		else if(n_commas - 1 = n_minus)
+		else if(n_commas - 1 = n_minus) ; or bilan stats perdues < poids rune
 		{
 			line_status := "ns"
 		}
@@ -1372,8 +1381,6 @@ AttemptResult(line) ; funAttemptStatus
 	}
 	else if(InStr(line, "-reliquat"))
 	{
-		StringReplace, line, line, %minus%, %minus%, UseErrorLevel
-		n_minus := ErrorLevel
 		if(n_commas + 1 = n_minus)
 		{
 			line_status := "ce"
@@ -1389,11 +1396,33 @@ AttemptResult(line) ; funAttemptStatus
 	}
 	else if(n_commas = 0)
 	{
-		line_status := "cs"
+		if(n_minus = 0)
+		{
+			line_status := "cs"
+		}
+		else if(n_minus = 1)
+		{
+			line_status := "ce"
+		}
+		else
+		{
+			MsgBox, Error : %line% : %n_minus% %minus% and %n_commas% %comma%
+		}
 	}
 	else
 	{
-		line_status := "ns"
+		if(n_commas + 1 = n_minus)
+		{
+			line_status := "ce"
+		}
+		else if(n_commas = n_minus)
+		{
+			line_status := "ns"
+		}
+		else
+		{
+			MsgBox, Error : %line% : %n_minus% %minus% and %n_commas% %comma%
+		}
 	}
 	return line_status
 }
@@ -1415,11 +1444,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 	; result est donc determinable ici
 	attempt_result := AttemptResult(line_changes)
 	
-	changes := StrSplit(line_changes, ", ")
-	found_reliquat := false
 	tampon_reliquat := 0
-	tampon_changes := {}
-	pushed_effects := []
 	
 	; attemptedPwrEffect (=runepwr based on current value)
 	index_attempt := HasValue(def_index, attempt_effect)
@@ -1432,17 +1457,29 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 	{
 		attempt_attemptedPwrEffect := -1 * ConvertToReliquat(attempt_value, attempt_effect, 0)
 	}
+	rune_residual_pwr := -1 * attempt_attemptedPwrEffect
+	
+	found_reliquat := false
+	found_plus_reliquat := false
+	if(InStr(line_changes, "reliquat"))
+	{
+		found_reliquat := true
+		if(InStr(line_changes, "+reliquat"))
+		{
+			found_plus_reliquat := true
+		}
+		tampon_reliquat := tampon_reliquat + rune_residual_pwr
+	}
+	
+	changes := StrSplit(line_changes, ", ")
+	tampon_changes := {}
+	pushed_effects := []
 	
 	For index, change in changes
 	{
-		if(change = "Échec")
+		if(change = "Échec" or InStr(change, "reliquat"))
 		{
 			break
-		}
-		else if(InStr(change, "reliquat"))
-		{
-			tampon_reliquat := tampon_reliquat - attempt_attemptedPwrEffect
-			found_reliquat := true
 		}
 		else
 		{
@@ -1476,15 +1513,24 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 			else
 			{
 				i_ef_index := HasValue(def_index, effect)
-				if(InStr(change, "-"))
+				if(found_reliquat)
 				{
+					addon_reliquat := 0
 					if(i_ef_index != 0)
 					{
-						tampon_reliquat := tampon_reliquat + ConvertToReliquat(value, effect, vef_index[i_ef_index])
+						addon_reliquat := ConvertToReliquat(value, effect, vef_index[i_ef_index])
 					}
 					else
 					{
-						tampon_reliquat := tampon_reliquat + ConvertToReliquat(value, effect, 0)
+						addon_reliquat := ConvertToReliquat(value, effect, 0)
+					}
+					if(effect = attempt_effect)
+					{
+						rune_residual_pwr := rune_residual_pwr - addon_reliquat
+					}
+					else
+					{
+						tampon_reliquat := tampon_reliquat + addon_reliquat
 					}
 				}
 				if(i_ef_index)
@@ -1530,9 +1576,32 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 	; effect (à reconvertir) => attempt_effect
 	; currentReliquat => reliquat
 	attempt_currentPwrItem := CurrentPwrItem()
+	reliquat_before := reliquat
+	
+	test_reliquat := true
+	
+	if(found_reliquat)
+	{
+		if(tampon_reliquat <= 0 and found_plus_reliquat)
+		{
+			tampon_reliquat := tampon_reliquat - rune_residual_pwr
+			attempt_result := "ns" ; special case exception where the rune cancel itself but remove other stats anyways thus creating reliquat
+		}
+		reliquat := reliquat + tampon_reliquat
+		; MsgBox, reliquat : %reliquat% tampon_reliquat : %tampon_reliquat% : %attempt_result%
+		; test_reliquat := false
+		if(reliquat < 0)
+		{
+			reliquat := 0
+		}
+	}
+	; if(test_reliquat) ; testdebug
+	; {
+		; MsgBox, reliquat : %reliquat% tampon_reliquat : %tampon_reliquat% : %attempt_result%
+	; }
 	
 	; dbhandler
-	attempt_id := dbhandler.AddAttempt(attempt_effect, reliquat, attempt_attemptedPwrEffect, attempt_currentPwrItem, attempt_result)
+	attempt_id := dbhandler.AddAttempt(attempt_effect, reliquat_before, attempt_attemptedPwrEffect, attempt_currentPwrItem, attempt_result)
 	
 	found_attempt_effect := false
 	attempt_effect_pwrBefore := -1 * ConvertToReliquat(vef_index[index_attempt], attempt_effect, 0)
@@ -1593,14 +1662,6 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 		
 		; dbhandler
 		dbhandler.AddChangeOnAttempt(attempt_id, push["effect"], effect_pwrBefore, effect_pwrAfter)
-	}
-	if(found_reliquat)
-	{
-		reliquat := reliquat + tampon_reliquat
-		if(reliquat < 0)
-		{
-			reliquat := 0
-		}
 	}
 	
 	if(!found_attempt_effect)
@@ -2283,6 +2344,7 @@ MainRoutine() ; funMainRoutine
 		}
 	}
 	MsgBox, Objet terminé _ reliquat _ %reliquat%
+	ForceInsertAttempts()
 }
 
 ; bottom
