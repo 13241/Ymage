@@ -15,6 +15,8 @@ procédure /ping
 
 # affinement du comportement :
 
+problème : cas d'un corps a corps à 2 lignes identiques + echec de lecture du jet maximal : faire en sorte d'ignorer totalement les lignes de degats
+
 REMARQUE : DANS LE CAS OU IL N'Y A PLUS DE RELIQUAT SUR L'OBJET, ECHEC CRITIQUE ET SUCCES NEUTRE SONT CONFONDUS
 
 problème : si l'historique est réellement constitué uniquement d'échecs, le programme bug.

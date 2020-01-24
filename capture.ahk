@@ -1602,6 +1602,15 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 	
 	; dbhandler
 	attempt_id := dbhandler.AddAttempt(attempt_effect, reliquat_before, attempt_attemptedPwrEffect, attempt_currentPwrItem, attempt_result)
+	; add current status of the item
+	For index_eff, eff in def_index
+	{
+		if(vef_index[index_eff] != 0)
+		{
+			eff_pwr := -1 * ConvertToReliquat(vef_index[index_eff], eff, 0)
+			dbhandler.AddChangeOnAttempt(attempt_id, eff, eff_pwr, eff_pwr)
+		}
+	}
 	
 	found_attempt_effect := false
 	attempt_effect_pwrBefore := -1 * ConvertToReliquat(vef_index[index_attempt], attempt_effect, 0)
@@ -2037,6 +2046,7 @@ UseRune(value, effect) ; funUseRune
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y, def_index, modif_max_index
 		, effects_index, key_blank, key_pa, key_ra, key_rune, hex_color_rune, hex_color_fusion, hex_color_inventory
 		, trash_bin
+	; identifier la rune
 	from_inventory := false
 	x := 0
 	y := 0
@@ -2059,6 +2069,7 @@ UseRune(value, effect) ; funUseRune
 	}
 	if((modif_max_index[y_index] = 0 and HasValue(trash_bin, effect) = 0) or y_index > 14)
 	{
+		; recuperer la rune dans l'inventaire
 		from_inventory := true
 		key_xy_search := "sea_xy"
 		x_search := ConvertToPx(x_5_4_s, locations_index[key_xy_search][key_x], width_5_4)
@@ -2101,6 +2112,7 @@ UseRune(value, effect) ; funUseRune
 	}
 	else
 	{
+		; recuperer la rune dans l'atelier
 		key_xy_s := "run_xy_s"
 		key_x_d := "run_x_d"
 		key_y_d := "run_y_d"
@@ -2125,9 +2137,13 @@ UseRune(value, effect) ; funUseRune
 	y_fus := ConvertToPx(y_5_4_s, locations_index[key_fus_xy][key_y], height_5_4)
 	no_hex_color_fusion := ""
 	
+	; assurer que la bonne rune est presente dans l'atelier
+
+	
+
 	PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
 	
-	if(no_hex_color_fusion != hex_color_fusion)
+	while(no_hex_color_fusion != hex_color_fusion)
 	{
 		SendInput {Enter}
 		SendInput {Ctrl Down}
@@ -2179,6 +2195,8 @@ UseRune(value, effect) ; funUseRune
 		return UseRune(value, effect)
 	}
 	
+	; effectuer la fusion et s'assurer qu'elle a bien eu lieu
+
 	sent_fusion := false
 	SendInput {Click %x_fus% %y_fus% 2}
 	

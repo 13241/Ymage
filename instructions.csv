@@ -1,7 +1,10 @@
 effet;valeur;priorité;exception
-Agilité;0;-1;1000
-Intelligence;60;max;
-Chance;60;max;
-Retrait PA;0;0;
-Sagesse;39;1;
-Vitalité;450;1;
+Force;0;-1;1000
+Vitalité;301;min;
+Puissance;60;max;
+Soins;0;0;
+Dommages Feu;0;0;
+Dommages Eau;0;0;
+Dommages Air;0;0;
+Sagesse;46;1;
+PA;1;2;

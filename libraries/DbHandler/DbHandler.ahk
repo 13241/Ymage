@@ -28,7 +28,7 @@ Class dbhandler
 	
 	Connect() ; funConnect
 	{
-		connectionString := "Server=localhost;Port=3306;Database=ymage;Uid=root;Pwd=;"
+		connectionString := "Server=localhost;Port=3306;Database=ymage;Uid=root;Pwd=root;"
 		this.db := DBA.DataBaseFactory.OpenDataBase("MySQL", connectionString)
 		
 		this.GetEffects()
