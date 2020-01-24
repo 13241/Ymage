@@ -33,7 +33,6 @@ Hotkey, !Numpad0, Reloading, On
 Hotkey, !Numpad1, Calibrate, On
 Hotkey, !Numpad2, CurrentStatus, On
 Hotkey, !Numpad3, MainRoutine, On
-Hotkey, !Numpad4, Recalibrate, On
 Hotkey, !Numpad5, Termination, On
 Hotkey, !Numpad6, TestEncoding, On ; keytest
 Hotkey, !Numpad7, ForceInsertAttempts, On
@@ -203,7 +202,67 @@ ForceInsertAttempts() ; funForceInsertAttempts
 		dbhandler.InsertAttempts()
 }
 
-; 
+Recalibrate(attempt_value, attempt_effect) ; funRecalibrate
+{
+	global pic_effect, pic_effect_2, vef_index, def_index
+
+	prev_vef_index := vef_index
+	prev_def_index := def_index
+
+	CaptureImage(pic_effect)
+	res := StructureOcrResult(ApplyOcr(pic_effect), pic_effect)
+	if (res[3])
+	{
+		vef_index := res[1]
+		def_index := res[2]
+	}
+	else
+	{
+		MsgBox, ocr_error
+		return false
+	}
+	if (not CaptureHiddenLines(false))
+		return false
+	; if no change -> do nothing (algo will continue)
+	; if changes -> apply changes manually then let algo continue
+	change := false
+	For index, def in prev_def_index
+	{
+		if (index > def_index.Length())
+		{
+			def_index.Push(def)
+			vef_index.Push(0)
+		}
+		else if (def_index[index] != def)
+		{
+			val := 0
+			i := index + 1
+			while (i <= def_index.Length())
+			{
+				if (def_index[i] = def)
+				{
+					val := vef_index[i]
+					def_index.RemoveAt(i)
+					vef_index.RemoveAt(i)
+					break
+				}
+				i := i + 1
+			}
+			def_index.InsertAt(index, def)
+			vef_index.InsertAt(index, val)
+		}
+		if (prev_vef_index[index] != vef_index[index])
+		{
+			change := true
+		}
+	}
+	if (change)
+	{
+		ApplyAttemptChanges(attempt_value, attempt_effect)
+	}
+	return true
+}
+
 Calibrate() ; funCalibrate
 {
 	Sleep, 500
@@ -290,7 +349,7 @@ Calibrate() ; funCalibrate
 		Sleep, %delay_ms%
 		PixelGetColor, testing_color, %x%, %y%, Slow
 	}
-	if(j = 40 and testing_color = temp_hex_color_inventory)
+	if (j = 40 and testing_color = temp_hex_color_inventory)
 	{
 		MsgBox, calibration _pixel inventory failed (1)
 		return
@@ -309,7 +368,7 @@ Calibrate() ; funCalibrate
 			Sleep, %delay_ms%
 			PixelGetColor, testing_color, %x%, %y%, Slow
 		}
-		if(j = 40 and testing_color = hex_color_inventory)
+		if (j = 40 and testing_color = hex_color_inventory)
 		{
 			MsgBox, calibration _pixel inventory failed (2)
 			return
@@ -319,16 +378,47 @@ Calibrate() ; funCalibrate
 	CaptureImage(pic_min)
 	CaptureImage(pic_max)
 	CaptureImage(pic_effect)
-	
-	min_index := StructureOcrResult(ApplyOCR(pic_min), pic_min)[1]
-	max_index := StructureOcrResult(ApplyOCR(pic_max), pic_max)[1]
-	vdef_index := StructureOcrResult(ApplyOCR(pic_effect), pic_effect)
-	vef_index := vdef_index[1]
-	def_index := vdef_index[2]
+
+	res := StructureOcrResult(ApplyOCR(pic_min), pic_min)
+	if (res[3])
+	{
+		min_index := res[1]
+	}
+	else
+	{
+		MsgBox, ocr_error
+		return
+	}
+	res := StructureOcrResult(ApplyOCR(pic_max), pic_max)[1]
+	if (res[3])
+	{
+		max_index := res[1]
+	}
+	else
+	{
+		MsgBox, ocr_error
+		return
+	}
+	res := StructureOcrResult(ApplyOCR(pic_effect), pic_effect)
+	if (res[3])
+	{
+		vef_index := res[1]
+		def_index := res[2]
+	}
+	else
+	{
+		MsgBox, ocr_error
+		return
+	}
 	
 	def_index := ConvertToKnownEffects(def_index)
 	
-	CaptureHiddenLines()
+	if (not CaptureHiddenLines())
+	{
+		return
+	}
+
+	MsgBox, coucou1
 	
 	CalibrateInstructions()
 	
@@ -341,13 +431,12 @@ RegisterMaxPwrItemEffects() ; funRegisterMaxPwrItemEffects
 	max_pwr_dic := {}
 	For index, def in def_index
 	{
-		if(max_index[index] != 0 and min_index[index] != 0)
+		if (max_index[index] != 0 and min_index[index] != 0)
 		{
 			pwr := -1 * ConvertToReliquat(max_index[index], def, 0)
 			max_pwr_dic[def] := pwr
 		}
 	}
-	
 	; dbhandler
 	dbhandler.ItemEffectsIdentification(max_pwr_dic)
 }
@@ -389,7 +478,7 @@ CaptureItemIds() ; funCaptureItemIds
 	while(ErrorLevel)
 	{
 		ClipWait, 0
-		if(Mod(counter, 20) = 0)
+		if (Mod(counter, 20) = 0)
 		{
 			SendInput {Click %x_chat% %y_chat% 3}
 			SendInput ^{c}
@@ -452,47 +541,76 @@ CaptureHiddenLines(new_item := true) ; funCaptureHiddenLines
 	PixelGetColor, hex_color_asc_1, %x_asc_1%, %y_asc_1%, Slow
 	PixelGetColor, hex_color_asc_2, %x_asc_2%, %y_asc_2%, Slow
 	PixelGetColor, hex_color_asc_3, %x_asc_3%, %y_asc_3%, Slow
-	if(hex_color_asc_1 = hex_color_asc_2 and hex_color_asc_2 != hex_color_asc_3)
+	if (hex_color_asc_1 = hex_color_asc_2 and hex_color_asc_2 != hex_color_asc_3)
 	{
 		SendInput {Click %x_asc_2% %y_asc_2% 0}
 		SendInput {WheelDown}
+		Sleep, 100
 		PixelGetColor, hex_color_asc_3, %x_asc_3%, %y_asc_3%, Slow
 		while(hex_color_asc_3 != hex_color_asc_2)
 		{
 			SendInput {WheelDown}
+			Sleep, 100
 			PixelGetColor, hex_color_asc_3, %x_asc_3%, %y_asc_3%, Slow
 		}
 		
-		if(new_item)
+		if (new_item)
 		{
 			CaptureImage(pic_min_2)
 			CaptureImage(pic_max_2)
 		}
 		CaptureImage(pic_effect_2)
 		SendInput {WheelUp}
+		Sleep, 100
 		PixelGetColor, hex_color_asc_1, %x_asc_1%, %y_asc_1%, Slow
 		while(hex_color_asc_1 != hex_color_asc_2)
 		{
 			SendInput {WheelUp}
+			Sleep, 100
 			PixelGetColor, hex_color_asc_1, %x_asc_1%, %y_asc_1%, Slow
 		}
 		
 		temp_min_index := []
 		temp_max_index := []
-		if(new_item)
+		if (new_item)
 		{
-			temp_min_index := StructureOcrResult(ApplyOCR(pic_min_2), pic_min_2)[1]
-			temp_max_index := StructureOcrResult(ApplyOCR(pic_max_2), pic_max_2)[1]
+			res := StructureOcrResult(ApplyOCR(pic_min_2), pic_min_2)
+			if (res[3])
+			{
+				temp_min_index := res[1]
+			}
+			else
+			{
+				MsgBox, ocr_error
+				return false
+			}
+			res := StructureOcrResult(ApplyOCR(pic_max_2), pic_max_2)
+			if (res[3])
+			{
+				temp_max_index := res[1]
+			}
+			else
+			{
+				MsgBox, ocr_error
+				return false
+			}
 		}
-		temp_vdef_index := StructureOcrResult(ApplyOCR(pic_effect_2), pic_effect_2)
-		temp_vef_index := temp_vdef_index[1]
-		temp_def_index := temp_vdef_index[2]
+		res := StructureOcrResult(ApplyOCR(pic_effect_2), pic_effect_2)
+		if (res[3]) {
+			temp_vef_index := res[1]
+			temp_def_index := res[2]
+		}
+		else
+		{
+			MsgBox, ocr_error
+			return false
+		}
 		
 		temp_def_index := ConvertToKnownEffects(temp_def_index)
 		
 		For index, def in temp_def_index
 		{
-			if(HasValue(def_index, def))
+			if (HasValue(def_index, def))
 			{
 				continue
 			}
@@ -500,7 +618,7 @@ CaptureHiddenLines(new_item := true) ; funCaptureHiddenLines
 			{
 				vef_index.Push(temp_vef_index[index])
 				def_index.Push(temp_def_index[index])
-				if(new_item and temp_max_index.HasKey(index))
+				if (new_item and temp_max_index.HasKey(index))
 				{
 					min_index.Push(temp_min_index[index])
 					max_index.Push(temp_max_index[index])
@@ -510,79 +628,9 @@ CaptureHiddenLines(new_item := true) ; funCaptureHiddenLines
 	}
 	else
 	{
-		return
+		return false
 	}
-}
-
-Recalibrate(new_item := false) ; funRecalibrate ; a supprimer
-{
-	global reliquat, pic_min, pic_max, pic_effect, min_index, max_index, vef_index, def_index
-		, trash_exception, current_trash, trash_bin, rf_floors, rf_final_floors, rf_instructions, auto_bypass, modif_max_index
-		, more_additional_index, last_history, reliquat_exception, floors_index, key_stdfloors, key_basic_std
-		, key_pa_std, key_basic_spe, key_pa_spe, final_floors_index, tolerances_index, instructions_index
-		, key_effects, key_values, pic_min_2, pic_max_2, pic_effect_2, rf_over_floors, over_floors_index, over_tolerances_index
-		, destroyer_effect, over_index
-	Sleep, 500
-	vef_index := []
-	def_index := []
-	modif_max_index := []
-	more_additional_index := []
-	reliquat := 0
-	trash_exception := false
-	current_trash := ""
-	trash_bin := []
-	last_history := ""
-	reliquat_exception := 1000
-	auto_bypass := true
-	destroyer_effect := ""
-	over_index := 0
-	
-	floors_index := {}
-	key_stdfloors := ""
-	key_basic_std := ""
-	key_pa_std := ""
-	key_basic_spe := ""
-	key_pa_spe := ""
-
-	final_floors_index := []
-	tolerances_index := []
-	
-	over_floors_index := []
-	over_tolerances_index := []
-
-	instructions_index := []
-	key_effects := ""
-	key_values := ""
-	
-	ReadFile(rf_floors, "AddToFloors_Index")
-	ReadFile(rf_final_floors, "AddToFinalFloors_Tolerances_Index")
-	ReadFile(rf_over_floors, "AddToOverFloors_Tolerances_Index")
-	ReadFile(rf_instructions, "AddToInstructions_Index")
-	
-	CaptureImage(pic_effect)
-	
-	if(new_item)
-	{
-		min_index := []
-		max_index := []
-		CaptureImage(pic_min)
-		CaptureImage(pic_max)
-		min_index := StructureOcrResult(ApplyOCR(pic_min), pic_min)[1]
-		max_index := StructureOcrResult(ApplyOCR(pic_max), pic_max)[1]
-	}
-	
-	
-	vdef_index := StructureOcrResult(ApplyOCR(pic_effect), pic_effect)
-	vef_index := vdef_index[1]
-	def_index := vdef_index[2]
-	
-	def_index := ConvertToKnownEffects(def_index)
-	
-	CaptureHiddenLines(new_item)
-	
-	CalibrateInstructions()
-	
-	Sleep, 500
+	return true
 }
 
 CalibrateInstructions() ; funCalibrateInstructions
@@ -592,24 +640,24 @@ CalibrateInstructions() ; funCalibrateInstructions
 	For index_correction, correction in corrections_index
 	{
 		eff_index := HasValue(def_index, index_correction)
-		if(correction.HasKey("min"))
+		if (correction.HasKey("min"))
 		{
 			min_index[eff_index] := correction["min"]
 		}
-		if(correction.HasKey("max"))
+		if (correction.HasKey("max"))
 		{
 			max_index[eff_index] := correction["max"]
 		}
 	}
 	For c_index, c_effect in def_index
 	{
-		if(!max_index.HasKey(c_index))
+		if (!max_index.HasKey(c_index))
 		{
 			max_index[c_index] := 0
 			min_index[c_index] := 0
 		}
 		modif_max_index[c_index] := max_index[c_index]
-		if(max_index[c_index] < vef_index[c_index] and def_index[c_index] != destroyer_effect) ; yolo teste si un over est present au calibrage
+		if (max_index[c_index] < vef_index[c_index] and def_index[c_index] != destroyer_effect) ; yolo teste si un over est present au calibrage
 		{
 			over_index := c_index
 		}
@@ -627,13 +675,13 @@ CalibrateInstructions() ; funCalibrateInstructions
 		For m_index, m_effect in instructions[key_effects]
 		{
 			d_index := HasValue(def_index, m_effect)
-			if(d_index != 0)
+			if (d_index != 0)
 			{
-				if(over_index = d_index and instructions[key_values][m_index] != 0)
+				if (over_index = d_index and instructions[key_values][m_index] != 0)
 				{
 					over_index := 0
 				}
-				if(modif_max_index[d_index] > instructions[key_values][m_index]) ; yolo condition changed (before test if not null)
+				if (modif_max_index[d_index] > instructions[key_values][m_index]) ; yolo condition changed (before test if not null)
 				{
 					modif_max_index[d_index] := instructions[key_values][m_index]
 					For sub_priority, all_priorities in more_additional_index
@@ -650,7 +698,7 @@ CalibrateInstructions() ; funCalibrateInstructions
 			{
 				For sub_priority, all_priorities in more_additional_index
 				{
-					if(sub_priority != _priority)
+					if (sub_priority != _priority)
 					{
 						all_priorities.Push(0)
 					}
@@ -677,7 +725,7 @@ ConvertToPx(delta_margin, ratio, reference, delta_ratio := 0, n_delta_ratio := 0
 ReadFile(file_name, func_name) ; funReadFile
 {
 	file := FileOpen(file_name, "r")
-	if(!IsObject(file))
+	if (!IsObject(file))
 	{
 		MsgBox, Cant open the file : %file_name%
 		return
@@ -696,7 +744,7 @@ AddToEffects_Index(line) ; funAddToEffects_Index
 	StringReplace, line, line, `r, , All
 	StringReplace, line, line, `n, , All
 	keys := StrSplit(line, ";")
-	if(key_rune = "")
+	if (key_rune = "")
 	{
 		key_rune := keys[1]
 		key_blank := keys[3]
@@ -721,43 +769,43 @@ AddToInstructions_Index(line) ; funAddToInstructions_Index
 	StringReplace, line, line, `r, , All
 	StringReplace, line, line, `n, , All
 	keys := StrSplit(line, ";")
-	if(key_effects = "")
+	if (key_effects = "")
 	{
 		key_effects := keys[1]
 		key_values := keys[2]
 	}
-	else if(keys[3] = "min")
+	else if (keys[3] = "min")
 	{
-		if(!IsObject(corrections_index[keys[1]]))
+		if (!IsObject(corrections_index[keys[1]]))
 		{
 			corrections_index[keys[1]] := {}
 		}
 		corrections_index[keys[1]]["min"] := keys[2]
 	}
-	else if(keys[3] = "max")
+	else if (keys[3] = "max")
 	{
-		if(!IsObject(corrections_index[keys[1]]))
+		if (!IsObject(corrections_index[keys[1]]))
 		{
 			corrections_index[keys[1]] := {}
 		}
 		corrections_index[keys[1]]["max"] := keys[2]
 	}
-	else if(keys[3] < 1)
+	else if (keys[3] < 1)
 	{
-		if(!(instructions_index.HasKey("1")))
+		if (!(instructions_index.HasKey("1")))
 		{
 			instructions_index["1"] := {}
 		}
-		if(!IsObject(instructions_index["1"][key_effects]) or !IsObject(instructions_index["1"][key_values]))
+		if (!IsObject(instructions_index["1"][key_effects]) or !IsObject(instructions_index["1"][key_values]))
 		{
 			instructions_index["1"][key_effects] := []
 			instructions_index["1"][key_values] := []
 		}
-		if(keys[3] = -1)
+		if (keys[3] = -1)
 		{
 			destroyer_effect := keys[1]
 		}
-		else if(keys[3] = 0)
+		else if (keys[3] = 0)
 		{
 			trash_bin.Push(keys[1])
 		}
@@ -766,11 +814,11 @@ AddToInstructions_Index(line) ; funAddToInstructions_Index
 	}
 	else
 	{
-		if(!(instructions_index.HasKey(keys[3])))
+		if (!(instructions_index.HasKey(keys[3])))
 		{
 			instructions_index[keys[3]] := {}
 		}
-		if(!IsObject(instructions_index[keys[3]][key_effects]) or !IsObject(instructions_index[keys[3]][key_values]))
+		if (!IsObject(instructions_index[keys[3]][key_effects]) or !IsObject(instructions_index[keys[3]][key_values]))
 		{
 			instructions_index[keys[3]][key_effects] := []
 			instructions_index[keys[3]][key_values] := []
@@ -778,7 +826,7 @@ AddToInstructions_Index(line) ; funAddToInstructions_Index
 		instructions_index[keys[3]][key_effects].Push(keys[1])
 		instructions_index[keys[3]][key_values].Push(keys[2])
 	}
-	if(keys[4] != "" and keys[4] != "exception")
+	if (keys[4] != "" and keys[4] != "exception")
 	{
 		reliquat_exception := keys[4]
 	}
@@ -790,7 +838,7 @@ AddToLocations_Index(line) ; funAddToLocations_Index
 	StringReplace, line, line, `r, , All
 	StringReplace, line, line, `n, , All
 	keys := StrSplit(line, ";")
-	if(key_x = "")
+	if (key_x = "")
 	{
 		key_x := keys[2]
 		key_y := keys[3]
@@ -809,7 +857,7 @@ AddToFloors_Index(line) ; funAddToFloors_Index
 	StringReplace, line, line, `r, , All
 	StringReplace, line, line, `n, , All
 	keys := StrSplit(line, ";")
-	if(key_stdfloors = "")
+	if (key_stdfloors = "")
 	{
 		key_stdfloors := keys[2]
 		key_basic_std := keys[3]
@@ -867,7 +915,7 @@ CaptureImage(pic_name, line := 0, decal_y := 0, decal_x := 0) ; funCaptureImage
 	y_s := 0
 	width := 0
 	height := 0
-	if(line > 0)
+	if (line > 0)
 	{
 		key_xy_s := pic_name . "_xy_s"
 		key_y_d := pic_name . "_y_d"
@@ -966,15 +1014,15 @@ StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 	global pic_effline, pic_minline, pic_maxline, pic_min, pic_max, pic_effect, locations_index, key_y, height_5_4, width_5_4, key_x
 		, pic_min_2, pic_max_2, pic_effect_2
 	pic_nameline := ""
-	if(pic_name = pic_min or pic_name = pic_min_2)
+	if (pic_name = pic_min or pic_name = pic_min_2)
 	{
 		pic_nameline := pic_minline
 	}
-	else if(pic_name = pic_max or pic_name = pic_max_2)
+	else if (pic_name = pic_max or pic_name = pic_max_2)
 	{
 		pic_nameline := pic_maxline
 	}
-	else if(pic_name = pic_effect or pic_name = pic_effect_2)
+	else if (pic_name = pic_effect or pic_name = pic_effect_2)
 	{
 		pic_nameline := pic_effline
 	}
@@ -993,11 +1041,11 @@ StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 	i := 0
 	For index, value in parts
 	{
-		if(index = 1 or value = "")
+		if (index = 1 or value = "")
 		{
 			continue
 		}
-		else if(pic_nameline = pic_minline or pic_nameline = pic_maxline)
+		else if (pic_nameline = pic_minline or pic_nameline = pic_maxline)
 		{
 			i := i + 1
 			container.Push(value)
@@ -1009,7 +1057,7 @@ StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 		else
 		{
 			position := InStr(value, "%", false, 1, 1)
-			if(position)
+			if (position)
 			{
 				nbr := SubStr(value, 1, position - 1)
 				if nbr is integer
@@ -1019,7 +1067,7 @@ StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 					temp_def_index.Push(SubStr(value, position))
 					continue
 				}
-				else if(StrLen(nbr) <= 4 and StrLen(nbr) > 0) ; yolo empeche usage de rune de chasse (osef)
+				else if (StrLen(nbr) <= 4 and StrLen(nbr) > 0) ; yolo empeche usage de rune de chasse (osef)
 				{
 					j := i
 					delta := 0
@@ -1034,14 +1082,14 @@ StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 							ocr_parts := StrSplit(ocr_result, ",")
 							For ocr_index, ocr_part in ocr_parts
 							{
-								if(ocr_part = "")
+								if (ocr_part = "")
 								{
 									continue
 								}
 								else
 								{
 									ocr_position := InStr(ocr_part, "%", false, 1, 1)
-									if(ocr_position)
+									if (ocr_position)
 									{
 										ocr_nbr := SubStr(ocr_part, 1, ocr_position - 1)
 										if ocr_nbr is integer
@@ -1053,7 +1101,7 @@ StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 										}
 									}
 									ocr_position := InStr(ocr_part, " ", false, 1, 1)
-									if(ocr_position)
+									if (ocr_position)
 									{
 										ocr_nbr := SubStr(ocr_part, 1, ocr_position - 1)
 										if ocr_nbr is integer
@@ -1068,10 +1116,10 @@ StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 							}
 							i_width := i_width + 1
 						}
-						if(positive)
+						if (positive)
 						{
 							delta := delta + 1
-							if(delta > delta_max)
+							if (delta > delta_max)
 							{
 								positive := false
 								delta := -1
@@ -1082,10 +1130,9 @@ StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 							delta := delta - 1
 						}
 					}
-					if(j = i)
+					if (j = i)
 					{
-						Recalibrate()
-						return
+						return [0,0,0]
 					}
 					else
 					{
@@ -1094,7 +1141,7 @@ StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 				}
 			}
 			position := InStr(value, " ", false, 1, 1)
-			if(position)
+			if (position)
 			{
 				nbr := SubStr(value, 1, position - 1)
 				if nbr is integer
@@ -1104,7 +1151,7 @@ StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 					temp_def_index.Push(SubStr(value, position + 1))
 					continue
 				}
-				else if(StrLen(nbr) <= 4 and StrLen(nbr) > 0 and SubStr(nbr, 1, 1) != "%") ; yolo empeche usage de rune de chasse (osef)
+				else if (StrLen(nbr) <= 4 and StrLen(nbr) > 0 and SubStr(nbr, 1, 1) != "%") ; yolo empeche usage de rune de chasse (osef)
 				{
 					j := i
 					delta := 0
@@ -1119,14 +1166,14 @@ StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 							ocr_parts := StrSplit(ocr_result, ",")
 							For ocr_index, ocr_part in ocr_parts
 							{
-								if(ocr_part = "")
+								if (ocr_part = "")
 								{
 									continue
 								}
 								else
 								{
 									ocr_position := InStr(ocr_part, "%", false, 1, 1)
-									if(ocr_position)
+									if (ocr_position)
 									{
 										ocr_nbr := SubStr(ocr_part, 1, ocr_position - 1)
 										if ocr_nbr is integer
@@ -1138,7 +1185,7 @@ StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 										}
 									}
 									ocr_position := InStr(ocr_part, " ", false, 1, 1)
-									if(ocr_position)
+									if (ocr_position)
 									{
 										ocr_nbr := SubStr(ocr_part, 1, ocr_position - 1)
 										if ocr_nbr is integer
@@ -1153,10 +1200,10 @@ StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 							}
 							i_width := i_width + 1
 						}
-						if(positive)
+						if (positive)
 						{
 							delta := delta + 1
-							if(delta > delta_max)
+							if (delta > delta_max)
 							{
 								positive := false
 								delta := -1
@@ -1167,10 +1214,9 @@ StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 							delta := delta - 1
 						}
 					}
-					if(j = i)
+					if (j = i)
 					{
-						Recalibrate()
-						return
+						return [0,0,0]
 					}
 					else
 					{
@@ -1183,7 +1229,7 @@ StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 			temp_def_index.Push(value)
 		}
 	}
-	return [container, temp_def_index]
+	return [container, temp_def_index, 1]
 }
 
 LevenshteinDistance(word, ref) ; funLevenshteinDistance
@@ -1191,11 +1237,11 @@ LevenshteinDistance(word, ref) ; funLevenshteinDistance
 	distance := 0
 	len_word := StrLen(word)
 	len_ref := StrLen(ref)
-	if(len_word = 0)
+	if (len_word = 0)
 	{
 		return len_ref
 	}
-	else if(len_ref = 0)
+	else if (len_ref = 0)
 	{
 		return len_word
 	}
@@ -1207,25 +1253,25 @@ LevenshteinDistance(word, ref) ; funLevenshteinDistance
 		j := 1
 		while(j <= len_ref + 1)
 		{
-			if(i = 1)
+			if (i = 1)
 			{
 				matrix[i][j] := j - 1
 			}
-			else if(j = 1)
+			else if (j = 1)
 			{
 				matrix[i][j] := i - 1
 			}
 			else
 			{
 				cost := 0
-				if(SubStr(word, i, 1) != SubStr(ref, j, 1))
+				if (SubStr(word, i, 1) != SubStr(ref, j, 1))
 				{
 					cost := 1
 				}
 				c_up := matrix[i - 1][j] + 1
 				c_left := matrix[i][j - 1] + 1
 				c_up_left := matrix[i - 1][j - 1] + cost
-				if(c_up < c_left)
+				if (c_up < c_left)
 				{
 					matrix[i][j] := c_up
 				}
@@ -1233,7 +1279,7 @@ LevenshteinDistance(word, ref) ; funLevenshteinDistance
 				{
 					matrix[i][j] := c_left
 				}
-				if(c_up_left < matrix[i][j])
+				if (c_up_left < matrix[i][j])
 				{
 					matrix[i][j] := c_up_left
 				}
@@ -1262,11 +1308,11 @@ ConvertToKnownEffects(ocr_def_index) ; funConvertToKnownEffects
 				For effect, values in effects_index
 				{
 					len_effect := StrLen(effect)
-					if(len_effect = len_ocr_effect + partial_dist or len_effect = len_ocr_effect - partial_dist)
+					if (len_effect = len_ocr_effect + partial_dist or len_effect = len_ocr_effect - partial_dist)
 					{
-						if(LevenshteinDistance(ocr_effect, effect) = distance)
+						if (LevenshteinDistance(ocr_effect, effect) = distance)
 						{
-							if(len_effect > len_match)
+							if (len_effect > len_match)
 							{
 								match := effect
 								len_match := StrLen(match)
@@ -1305,7 +1351,7 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 	while(ErrorLevel)
 	{
 		ClipWait, 0
-		if(Mod(counter, 20) = 0)
+		if (Mod(counter, 20) = 0)
 		{
 			SendInput {Enter}
 			SendInput {Click Down %x_s% %y_s%}
@@ -1325,7 +1371,7 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 	
 	last_line := []
 	
-	if(InStr(last_history, history_result))
+	if (InStr(last_history, history_result))
 	{
 		return CaptureLastAttemptHistory() ; [] before
 	}
@@ -1360,17 +1406,17 @@ AttemptResult(line) ; funAttemptResult
 	n_commas := ErrorLevel
 	StringReplace, line, line, %minus%, %minus%, UseErrorLevel
 	n_minus := ErrorLevel
-	if(InStr(line, "Échec"))
+	if (InStr(line, "Échec"))
 	{
 		line_status := "ns"
 	}
-	else if(InStr(line, "+reliquat"))
+	else if (InStr(line, "+reliquat"))
 	{
-		if(n_minus = n_commas)
+		if (n_minus = n_commas)
 		{
 			line_status := "ce"
 		}
-		else if(n_commas - 1 = n_minus) ; or bilan stats perdues < poids rune
+		else if (n_commas - 1 = n_minus) ; or bilan stats perdues < poids rune
 		{
 			line_status := "ns"
 		}
@@ -1379,13 +1425,13 @@ AttemptResult(line) ; funAttemptResult
 			MsgBox, Error : %line% : %n_minus% %minus% and %n_commas% %comma%
 		}
 	}
-	else if(InStr(line, "-reliquat"))
+	else if (InStr(line, "-reliquat"))
 	{
-		if(n_commas + 1 = n_minus)
+		if (n_commas + 1 = n_minus)
 		{
 			line_status := "ce"
 		}
-		else if(n_commas = n_minus)
+		else if (n_commas = n_minus)
 		{
 			line_status := "ns"
 		}
@@ -1394,13 +1440,13 @@ AttemptResult(line) ; funAttemptResult
 			MsgBox, Error : %line% : %n_minus% %minus% and %n_commas% %comma%
 		}
 	}
-	else if(n_commas = 0)
+	else if (n_commas = 0)
 	{
-		if(n_minus = 0)
+		if (n_minus = 0)
 		{
 			line_status := "cs"
 		}
-		else if(n_minus = 1)
+		else if (n_minus = 1)
 		{
 			line_status := "ce"
 		}
@@ -1411,11 +1457,11 @@ AttemptResult(line) ; funAttemptResult
 	}
 	else
 	{
-		if(n_commas + 1 = n_minus)
+		if (n_commas + 1 = n_minus)
 		{
 			line_status := "ce"
 		}
-		else if(n_commas = n_minus)
+		else if (n_commas = n_minus)
 		{
 			line_status := "ns"
 		}
@@ -1449,7 +1495,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 	; attemptedPwrEffect (=runepwr based on current value)
 	index_attempt := HasValue(def_index, attempt_effect)
 	attempt_attemptedPwrEffect := 0
-	if(index_attempt != 0)
+	if (index_attempt != 0)
 	{
 		attempt_attemptedPwrEffect := -1 * ConvertToReliquat(attempt_value, attempt_effect, vef_index[index_attempt])
 	}
@@ -1461,10 +1507,10 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 	
 	found_reliquat := false
 	found_plus_reliquat := false
-	if(InStr(line_changes, "reliquat"))
+	if (InStr(line_changes, "reliquat"))
 	{
 		found_reliquat := true
-		if(InStr(line_changes, "+reliquat"))
+		if (InStr(line_changes, "+reliquat"))
 		{
 			found_plus_reliquat := true
 		}
@@ -1477,7 +1523,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 	
 	For index, change in changes
 	{
-		if(change = "Échec" or InStr(change, "reliquat"))
+		if (change = "Échec" or InStr(change, "reliquat"))
 		{
 			break
 		}
@@ -1486,7 +1532,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 			value := 0
 			effect := ""
 			position := InStr(change, "%")
-			if(position)
+			if (position)
 			{
 				value := SubStr(change, 1, position - 1)
 				effect := SubStr(change, position)
@@ -1494,7 +1540,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 			else
 			{
 				position := InStr(change, " ")
-				if(position)
+				if (position)
 				{
 					value := SubStr(change, 1, position - 1)
 					effect := SubStr(change, position + 1)
@@ -1505,7 +1551,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 				ApplyAttemptChanges(attempt_value, attempt_effect) ; yolo on refait la capture du clipboard, on assume que la fusion a été faite
 				return
 			}
-			else if(effect = "")
+			else if (effect = "")
 			{
 				ApplyAttemptChanges(attempt_value, attempt_effect) ; yolo on refait la capture du clipboard, on assume que la fusion a été faite
 				return
@@ -1513,10 +1559,10 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 			else
 			{
 				i_ef_index := HasValue(def_index, effect)
-				if(found_reliquat)
+				if (found_reliquat)
 				{
 					addon_reliquat := 0
-					if(i_ef_index != 0)
+					if (i_ef_index != 0)
 					{
 						addon_reliquat := ConvertToReliquat(value, effect, vef_index[i_ef_index])
 					}
@@ -1524,7 +1570,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 					{
 						addon_reliquat := ConvertToReliquat(value, effect, 0)
 					}
-					if(effect = attempt_effect)
+					if (effect = attempt_effect)
 					{
 						rune_residual_pwr := rune_residual_pwr - addon_reliquat
 					}
@@ -1533,33 +1579,33 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 						tampon_reliquat := tampon_reliquat + addon_reliquat
 					}
 				}
-				if(i_ef_index)
+				if (i_ef_index)
 				{
-					if(!IsObject(tampon_changes[i_ef_index]))
+					if (!IsObject(tampon_changes[i_ef_index]))
 					{
 						tampon_changes[i_ef_index] := {}
 					}
 					tampon_changes[i_ef_index]["value"] := value
 					tampon_changes[i_ef_index]["effect"] := effect
 					tampon_changes[i_ef_index]["operation"] := "modify"
-					if(max_index[i_ef_index] = 0 and vef_index[i_ef_index] = 0 and min_index[i_ef_index] = 0 and modif_max_index[i_ef_index] = 0)
+					if (max_index[i_ef_index] = 0 and vef_index[i_ef_index] = 0 and min_index[i_ef_index] = 0 and modif_max_index[i_ef_index] = 0)
 					{
 						instructed_effect := false
 						For _priority, instruction in instructions_index
 						{
-							if(HasValue(instruction[key_effects], effect) != 0)
+							if (HasValue(instruction[key_effects], effect) != 0)
 							{
 								instructed_effect := true
 								break
 							}
 						}
-						if(instructed_effect = false)
+						if (instructed_effect = false)
 						{
 							tampon_changes[i_ef_index]["operation"] := "remove"
 						}
 					}
 				}
-				else if(effects_index.HasKey(effect))
+				else if (effects_index.HasKey(effect))
 				{
 					pushed_effects.Push({"value":value, "effect":effect})
 				}
@@ -1580,9 +1626,9 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 	
 	test_reliquat := true
 	
-	if(found_reliquat)
+	if (found_reliquat)
 	{
-		if(tampon_reliquat <= 0 and found_plus_reliquat)
+		if (tampon_reliquat <= 0 and found_plus_reliquat)
 		{
 			tampon_reliquat := tampon_reliquat - rune_residual_pwr
 			attempt_result := "ns" ; special case exception where the rune cancel itself but remove other stats anyways thus creating reliquat
@@ -1590,12 +1636,12 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 		reliquat := reliquat + tampon_reliquat
 		; MsgBox, reliquat : %reliquat% tampon_reliquat : %tampon_reliquat% : %attempt_result%
 		; test_reliquat := false
-		if(reliquat < 0)
+		if (reliquat < 0)
 		{
 			reliquat := 0
 		}
 	}
-	; if(test_reliquat) ; testdebug
+	; if (test_reliquat) ; testdebug
 	; {
 		; MsgBox, reliquat : %reliquat% tampon_reliquat : %tampon_reliquat% : %attempt_result%
 	; }
@@ -1605,7 +1651,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 	; add current status of the item
 	For index_eff, eff in def_index
 	{
-		if(vef_index[index_eff] != 0)
+		if (vef_index[index_eff] != 0)
 		{
 			eff_pwr := -1 * ConvertToReliquat(vef_index[index_eff], eff, 0)
 			dbhandler.AddChangeOnAttempt(attempt_id, eff, eff_pwr, eff_pwr)
@@ -1617,7 +1663,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 	
 	For i_tampon_change, tampon_change in tampon_changes
 	{
-		if(tampon_change["effect"] = attempt_effect)
+		if (tampon_change["effect"] = attempt_effect)
 		{
 			found_attempt_effect := true
 		}
@@ -1625,7 +1671,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 		effect_pwrBefore := -1 * ConvertToReliquat(vef_index[i_tampon_change], tampon_change["effect"], 0)
 		effect_pwrAfter := 0
 		
-		if(tampon_change["operation"] = "remove")
+		if (tampon_change["operation"] = "remove")
 		{
 			max_index.RemoveAt(i_tampon_change)
 			min_index.RemoveAt(i_tampon_change)
@@ -1650,7 +1696,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 	}
 	For push_index, push in pushed_effects
 	{
-		if(push["effect"] = attempt_effect)
+		if (push["effect"] = attempt_effect)
 		{
 			found_attempt_effect := true
 		}
@@ -1673,14 +1719,14 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 		dbhandler.AddChangeOnAttempt(attempt_id, push["effect"], effect_pwrBefore, effect_pwrAfter)
 	}
 	
-	if(!found_attempt_effect)
+	if (!found_attempt_effect)
 	{
 		; dbhandler
 		dbhandler.AddChangeOnAttempt(attempt_id, attempt_effect, attempt_effect_pwrBefore, attempt_effect_pwrBefore)
 	}
 	
 	; dbhandler
-	if(dbhandler.AttemptsCount != 0 and Mod(dbhandler.AttemptsCount, 10) = 0)
+	if (dbhandler.AttemptsCount != 0 and Mod(dbhandler.AttemptsCount, 10) = 0)
 	{
 		dbhandler.InsertAttempts()
 	}
@@ -1690,11 +1736,11 @@ ConvertToReliquat(value, effect, reference) ; funConvertToReliquat
 {
 	global effects_index, key_pwr
 	eff_reliquat := 0
-	if(effects_index.HasKey(effect))
+	if (effects_index.HasKey(effect))
 	{
-		if(reference < -1)
+		if (reference < -1)
 		{
-			if(reference + value <= -1)
+			if (reference + value <= -1)
 			{
 				eff_reliquat := -1 * effects_index[effect][key_pwr] * value / 2
 			}
@@ -1707,7 +1753,7 @@ ConvertToReliquat(value, effect, reference) ; funConvertToReliquat
 		}
 		else
 		{
-			if(reference + value < -1)
+			if (reference + value < -1)
 			{
 				pos_value := -1 * (reference + 1)
 				neg_value := value + reference + 1
@@ -1729,7 +1775,7 @@ GetNeededReliquat(objective) ; funGetNeededReliquat
 	final_reliquat := 0
 	For index, value in objective
 	{
-		if(def_index[index] != "Prospection" and effects_index[def_index[index]][key_pwr] < reliquat) ; yolo doit tenir compte des trash autre que prospection
+		if (def_index[index] != "Prospection" and effects_index[def_index[index]][key_pwr] < reliquat) ; yolo doit tenir compte des trash autre que prospection
 		{
 			current_reliquat := current_reliquat + ConvertToReliquat(vef_index[index], def_index[index], 0)
 			final_reliquat := final_reliquat + ConvertToReliquat(value, def_index[index], 0)
@@ -1744,7 +1790,7 @@ GetCurrentOverPwr(ignore_index := 0) ; funGetCurrentOverPwr
 	current_over_pwr := 0
 	For index, value in vef_index
 	{
-		if(vef_index[index] > max_index[index] and index != ignore_index)
+		if (vef_index[index] > max_index[index] and index != ignore_index)
 		{
 			current_over_pwr := current_over_pwr + ConvertToReliquat(vef_index[index], def_index[index], 0) - ConvertToReliquat(max_index[index], def_index[index], 0)
 		}
@@ -1754,7 +1800,7 @@ GetCurrentOverPwr(ignore_index := 0) ; funGetCurrentOverPwr
 
 HasValue(haystack, needle) ; funHasValue
 {
-	if(!IsObject(haystack) or haystack.Length() = 0)
+	if (!IsObject(haystack) or haystack.Length() = 0)
 	{
 		return 0
 	}
@@ -1762,7 +1808,7 @@ HasValue(haystack, needle) ; funHasValue
 	{
 		For index, value in haystack
 		{
-			if(value = needle)
+			if (value = needle)
 			{
 				return index
 			}
@@ -1777,9 +1823,9 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 		, floors_index, key_stdfloors, key_basic_std, key_basic_spe, key_pa_std, key_pa_spe, final_floors_index
 		, tolerances_index, trash_exception, current_trash, trash_bin, reliquat, reliquat_exception, auto_bypass
 		, over_floors_index, over_tolerances_index, destroyer_effect, over_index
-	if(over_index != 0 and destroyer_effect != "")
+	if (over_index != 0 and destroyer_effect != "")
 	{
-		if(vef_index[over_index] > max_index[over_index])
+		if (vef_index[over_index] > max_index[over_index])
 		{
 			destroyer_value := effects_index[destroyer_effect][key_blank]
 			return [destroyer_value, destroyer_effect]
@@ -1789,23 +1835,23 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 			over_index := 0
 		}
 	}
-	if(bypass = true)
+	if (bypass = true)
 	{
 		auto_bypass := true
 	}
-	else if(reliquat >= reliquat_exception)
+	else if (reliquat >= reliquat_exception)
 	{
 		auto_bypass := false
 	}
 	adapted_objective := []
-	if(adapted)
+	if (adapted)
 	{
 		For index, value in objective
 		{
 			tolerance := 0
 			For i_floor, final_floor in final_floors_index
 			{
-				if(value >= final_floor)
+				if (value >= final_floor)
 				{
 					tolerance := tolerances_index[i_floor]
 					break
@@ -1827,14 +1873,14 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 	current_value := 0
 	exo_effect := ""
 	over_index := 0
-	if(auto_bypass = false or force_objective = true) ; yolo adapted condition
+	if (auto_bypass = false or force_objective = true) ; yolo adapted condition
 	{
 		max_pwr := 0
 		For index_exo, exo in def_index
 		{
-			if(adapted_objective[index_exo] - max_index[index_exo] = 1 and effects_index[exo][key_pwr] >= reliquat_exception) ; yolo objective changed
+			if (adapted_objective[index_exo] - max_index[index_exo] = 1 and effects_index[exo][key_pwr] >= reliquat_exception) ; yolo objective changed
 			{
-				if(effects_index[exo][key_pwr] > max_pwr)
+				if (effects_index[exo][key_pwr] > max_pwr)
 				{
 					max_pwr := effects_index[exo][key_pwr]
 					exo_effect := exo
@@ -1844,31 +1890,31 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 	}
 	For index, def in def_index
 	{
-		if(def = current_trash or (current_trash = "" and HasValue(trash_bin, def) != 0))
+		if (def = current_trash or (current_trash = "" and HasValue(trash_bin, def) != 0))
 		{
-			if(reliquat > 9 or auto_bypass = false)
+			if (reliquat > 9 or auto_bypass = false)
 			{
 				trash_exception := false
 				current_trash := ""
 			}
-			else if((vef_index[index] = 0 and reliquat < 1) or trash_exception)
+			else if ((vef_index[index] = 0 and reliquat < 1) or trash_exception)
 			{
 				high_objective := false
 				For i_spe, val_spe in max_index
 				{
-					if(val_spe = 0 and adapted_objective[i_spe] != 0)
+					if (val_spe = 0 and adapted_objective[i_spe] != 0)
 					{
 						high_objective := true
 					}
 				}
-				if(vef_index[index] >= min_index[index] or high_objective = true)
+				if (vef_index[index] >= min_index[index] or high_objective = true)
 				{
 					trash_exception := false
 					current_trash := ""
 				}
 				else
 				{
-					if(!trash_exception)
+					if (!trash_exception)
 					{
 						trash_exception := true
 						current_trash := def
@@ -1883,31 +1929,31 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 				}
 			}
 		}
-		else if(vef_index[index] < adapted_objective[index])
+		else if (vef_index[index] < adapted_objective[index])
 		{
 			minimal_delta := 0
 			ra := effects_index[def][key_ra]
 			pa := effects_index[def][key_pa]
 			blank := effects_index[def][key_blank]
 			compare_value := max_index[index]
-			if(max_index[index] < adapted_objective[index])
+			if (max_index[index] < adapted_objective[index])
 			{
 				compare_value := adapted_objective[index]
 			}
-			if(compare_value > floors_index[effects_index[def][key_pwr]][key_stdfloors])
+			if (compare_value > floors_index[effects_index[def][key_pwr]][key_stdfloors])
 			{
-				if(vef_index[index] + blank <= floors_index[effects_index[def][key_pwr]][key_basic_spe])
+				if (vef_index[index] + blank <= floors_index[effects_index[def][key_pwr]][key_basic_spe])
 				{
 					minimal_delta := blank
 				}
-				else if(pa != "" and vef_index[index] + pa <= floors_index[effects_index[def][key_pwr]][key_pa_spe])
+				else if (pa != "" and vef_index[index] + pa <= floors_index[effects_index[def][key_pwr]][key_pa_spe])
 				{
 					minimal_delta := pa
 				}
 			}
 			else
 			{
-				if(vef_index[index] + blank <= floors_index[effects_index[def][key_pwr]][key_basic_std])
+				if (vef_index[index] + blank <= floors_index[effects_index[def][key_pwr]][key_basic_std])
 				{
 					minimal_delta := blank
 				}
@@ -1916,9 +1962,9 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 					minimal_delta := pa
 				}
 			}
-			if(minimal_delta = 0)
+			if (minimal_delta = 0)
 			{
-				if(ra != "")
+				if (ra != "")
 				{
 					minimal_delta := ra
 				}
@@ -1930,19 +1976,19 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 			over_tolerance := 0
 			For i_over, over_floor in over_floors_index
 			{
-				if(adapted_objective[index] >= over_floor)
+				if (adapted_objective[index] >= over_floor)
 				{
 					over_tolerance := over_tolerances_index[i_over]
 					break
 				}
 			}
-			if(def != exo_effect and (auto_bypass = true or ConvertToReliquat(minimal_delta, def, vef_index[index]) + reliquat >= 0)) ; yolo adapted condition
+			if (def != exo_effect and (auto_bypass = true or ConvertToReliquat(minimal_delta, def, vef_index[index]) + reliquat >= 0)) ; yolo adapted condition
 			{
-				if(minimal_delta <= adapted_objective[index] - vef_index[index] or (adapted_objective[index] - vef_index[index] > over_tolerance and minimal_delta != adapted_objective[index] and !(ConvertToReliquat(max_index[index], def, 0) < -101 and ConvertToReliquat(vef_index[index] + minimal_delta, def, 0) < ConvertToReliquat(max_index[index], def, 0)))) ; yolo maximal over power rate condition (last)
+				if (minimal_delta <= adapted_objective[index] - vef_index[index] or (adapted_objective[index] - vef_index[index] > over_tolerance and minimal_delta != adapted_objective[index] and !(ConvertToReliquat(max_index[index], def, 0) < -101 and ConvertToReliquat(vef_index[index] + minimal_delta, def, 0) < ConvertToReliquat(max_index[index], def, 0)))) ; yolo maximal over power rate condition (last)
 				{
-					if((effects_index[def][key_pwr] = pwr_effect and adapted_objective[index] - vef_index[index] > delta_value) or effects_index[def][key_pwr] > pwr_effect)
+					if ((effects_index[def][key_pwr] = pwr_effect and adapted_objective[index] - vef_index[index] > delta_value) or effects_index[def][key_pwr] > pwr_effect)
 					{
-						if(adapted_objective[index] - vef_index[index] > over_tolerance and minimal_delta != adapted_objective[index] and !(minimal_delta <= adapted_objective[index] - vef_index[index]))
+						if (adapted_objective[index] - vef_index[index] > over_tolerance and minimal_delta != adapted_objective[index] and !(minimal_delta <= adapted_objective[index] - vef_index[index]))
 						{
 							over_index := index
 							max_value := vef_index[index] + minimal_delta
@@ -1959,10 +2005,10 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 						effect := def
 						pwr_effect := effects_index[def][key_pwr]
 						current_value := vef_index[index]
-						if(max_delta_value < delta_value)
+						if (max_delta_value < delta_value)
 						{
 							std_delta_value := floors_index[pwr_effect][key_stdfloors] - vef_index[index]
-							if(delta_value < std_delta_value)
+							if (delta_value < std_delta_value)
 							{
 								max_delta_value := delta_value
 							}
@@ -1977,7 +2023,7 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 			}
 		}
 	}
-	if(effect = "")
+	if (effect = "")
 	{
 		return [0, ""]
 	}
@@ -1989,7 +2035,7 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 		blank := effects_index[effect][key_blank]
 		floor_basic := 0
 		floor_pa := 0
-		if(max_value > floors_index[pwr_effect][key_stdfloors])
+		if (max_value > floors_index[pwr_effect][key_stdfloors])
 		{
 			floor_basic := floors_index[pwr_effect][key_basic_spe]
 			floor_pa := floors_index[pwr_effect][key_pa_spe]
@@ -1999,13 +2045,13 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 			floor_basic := floors_index[pwr_effect][key_basic_std]
 			floor_pa := floors_index[pwr_effect][key_pa_std]
 		}
-		if(adapted)
+		if (adapted)
 		{
-			if(ra != "" and ra <= max_delta_value)
+			if (ra != "" and ra <= max_delta_value)
 			{
 				value := ra
 			}
-			else if(pa != "" and (pa < max_delta_value or (pa = max_delta_value and current_value + blank > floor_basic)))
+			else if (pa != "" and (pa < max_delta_value or (pa = max_delta_value and current_value + blank > floor_basic)))
 			{
 				value := pa
 			}
@@ -2016,24 +2062,24 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 		}
 		else
 		{
-			if(current_value + blank <= floor_basic and blank <= delta_value)
+			if (current_value + blank <= floor_basic and blank <= delta_value)
 			{
 				value := blank
 			}
-			else if(pa != "" and current_value + pa <= floor_pa and pa <= delta_value)
+			else if (pa != "" and current_value + pa <= floor_pa and pa <= delta_value)
 			{
 				value := pa
 			}
-			else if(ra != "" and ra <= delta_value)
+			else if (ra != "" and ra <= delta_value)
 			{
 				value := ra
 			}
 		}
-		if(effect != "" and auto_bypass = false and reliquat + ConvertToReliquat(value, effect, current_value) < 0)
+		if (effect != "" and auto_bypass = false and reliquat + ConvertToReliquat(value, effect, current_value) < 0)
 		{
 			return ChooseRune(objective, adapted, true)
 		}
-		else if(effect != "" and current_value + value > max_value and (GetCurrentOverPwr() + ConvertToReliquat(current_value + value, effect, 0) - ConvertToReliquat(max_value, effect, 0) < -101 or ConvertToReliquat(current_value + value, effect, 0) < -101))
+		else if (effect != "" and current_value + value > max_value and (GetCurrentOverPwr() + ConvertToReliquat(current_value + value, effect, 0) - ConvertToReliquat(max_value, effect, 0) < -101 or ConvertToReliquat(current_value + value, effect, 0) < -101))
 		{
 			return [0, ""]
 		}
@@ -2053,21 +2099,21 @@ UseRune(value, effect) ; funUseRune
 	y_index := HasValue(def_index, effect)
 	x_index := 0
 	modifier := ""
-	if(effects_index[effect][key_blank] = value)
+	if (effects_index[effect][key_blank] = value)
 	{
 		x_index := 1
 	}
-	else if(effects_index[effect][key_pa] = value)
+	else if (effects_index[effect][key_pa] = value)
 	{
 		x_index := 2
 		modifier := key_pa . " "
 	}
-	else if(effects_index[effect][key_ra] = value)
+	else if (effects_index[effect][key_ra] = value)
 	{
 		x_index := 3
 		modifier := key_ra . " "
 	}
-	if((modif_max_index[y_index] = 0 and HasValue(trash_bin, effect) = 0) or y_index > 14)
+	if ((modif_max_index[y_index] = 0 and HasValue(trash_bin, effect) = 0) or y_index > 14)
 	{
 		; recuperer la rune dans l'inventaire
 		from_inventory := true
@@ -2087,7 +2133,7 @@ UseRune(value, effect) ; funUseRune
 		counter := 0
 		while(temp_hex_color != hex_color_inventory)
 		{
-			if(Mod(counter, 20) = 0)
+			if (Mod(counter, 20) = 0)
 			{
 				SendInput {Enter}
 				SendInput {Click %x_search% %y_search% 3}
@@ -2117,7 +2163,7 @@ UseRune(value, effect) ; funUseRune
 		key_x_d := "run_x_d"
 		key_y_d := "run_y_d"
 		y := ConvertToPx(y_5_4_s, locations_index[key_xy_s][key_y], height_5_4, locations_index[key_y_d][key_y], y_index - 1)
-		if(x_index = 0)
+		if (x_index = 0)
 		{
 			MsgBox, Fatal _error _no rune found
 			return false
@@ -2139,43 +2185,27 @@ UseRune(value, effect) ; funUseRune
 	
 	; assurer que la bonne rune est presente dans l'atelier
 
-	
-
-	PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
-	
-	while(no_hex_color_fusion != hex_color_fusion)
+	while (no_hex_color_fusion != hex_color_fusion)
 	{
+		SendInput, {Click, %x% %y%, 2}
+		Random, delay_ms, 50, 100
+		Sleep, %delay_ms%
+		i := 0
+		while (no_hex_color_fusion != hex_color_fusion and i < 40)
+		{
+			SendInput {Click %x_no_rune% %y_no_rune% 2}
+			Random, delay_ms, 50, 100
+			Sleep, %delay_ms%
+			PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+			i := i + 1
+		}
 		SendInput {Enter}
 		SendInput {Ctrl Down}
 		SendInput {Click %x_no_rune% %y_no_rune% 2}
 		Sleep, 100
 		SendInput {Ctrl Up}
 		SendInput {Click 0 0 0}
-
 		PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
-		
-		while(no_hex_color_fusion != hex_color_fusion)
-		{
-			i := 0
-			while(no_hex_color_fusion != hex_color_fusion and i < 40)
-			{
-				i := i + 1
-				Random, delay_ms, 50, 100
-				Sleep, %delay_ms%
-				PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
-			}
-			if(i = 40 and no_hex_color_fusion != hex_color_fusion)
-			{
-				SendInput {Enter}
-				SendInput {Ctrl Down}
-				SendInput {Click %x_no_rune% %y_no_rune% 2}
-				Sleep, 100
-				SendInput {Ctrl Up}
-				SendInput {Click 0 0 0}
-				
-				PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
-			}
-		}
 	}
 	
 	SendInput {Click %x% %y% 2}
@@ -2190,14 +2220,13 @@ UseRune(value, effect) ; funUseRune
 		Sleep, %delay_ms%
 		PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
 	}
-	if(i = 40 and no_hex_color_fusion = hex_color_fusion)
+	if (i = 40 and no_hex_color_fusion = hex_color_fusion)
 	{
 		return UseRune(value, effect)
 	}
 	
 	; effectuer la fusion et s'assurer qu'elle a bien eu lieu
 
-	sent_fusion := false
 	SendInput {Click %x_fus% %y_fus% 2}
 	
 	; on peut certifier qu'on a fait le fusionner si on capture que fusionner est devenu gris après le clic
@@ -2206,68 +2235,12 @@ UseRune(value, effect) ; funUseRune
 	while(no_hex_color_fusion != hex_color_fusion and i < 40)
 	{
 		i := i + 1
-		Random, delay_ms, 50, 100
-		Sleep, %delay_ms%
+		Sleep, 25
 		PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
 	}
-	if(no_hex_color_fusion = hex_color_fusion)
+	if (i = 40)
 	{
-		sent_fusion := true
-	}
-	
-	PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%, Slow
-	
-	i := 0
-	while(no_hex_color_rune != hex_color_rune and i < 40)
-	{
-		i := i + 1
-		Random, delay_ms, 50, 100
-		Sleep, %delay_ms%
-		PixelGetColor, no_hex_color_rune, %x_no_rune%, %y_no_rune%, Slow
-	}
-	if(i = 40 and no_hex_color_rune != hex_color_rune)
-	{
-		PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
-	
-		if(no_hex_color_fusion != hex_color_fusion)
-		{
-			SendInput {Enter}
-			SendInput {Ctrl Down}
-			SendInput {Click %x_no_rune% %y_no_rune% 2}
-			Sleep, 100
-			SendInput {Ctrl Up}
-			SendInput {Click 0 0 0}
-
-			PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
-			
-			while(no_hex_color_fusion != hex_color_fusion)
-			{
-				i := 0
-				while(no_hex_color_fusion != hex_color_fusion and i < 40)
-				{
-					i := i + 1
-					Random, delay_ms, 50, 100
-					Sleep, %delay_ms%
-					PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
-				}
-				if(i = 40 and no_hex_color_fusion != hex_color_fusion)
-				{
-					SendInput {Enter}
-					SendInput {Ctrl Down}
-					SendInput {Click %x_no_rune% %y_no_rune% 2}
-					Sleep, 100
-					SendInput {Ctrl Up}
-					SendInput {Click 0 0 0}
-					
-					PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
-				}
-			}
-		}
-		Sleep, 2000
-		if(sent_fusion = false)
-		{
-			return false
-		}
+		return false
 	}
 	return true
 }
@@ -2282,23 +2255,23 @@ MainRoutine() ; funMainRoutine
 	while(finished = false)
 	{
 		authorized_bypass := true
-		if(GetNeededReliquat(min_index) + reliquat >= 0)
+		if (GetNeededReliquat(min_index) + reliquat >= 0)
 		{
 			authorized_bypass := false
 		}
 		rune := ChooseRune(min_index, true, authorized_bypass)
-		if(rune[1] = 0)
+		if (rune[1] = 0)
 		{
 			authorized_bypass := true
-			if(GetNeededReliquat(modif_max_index) + reliquat >= 0)
+			if (GetNeededReliquat(modif_max_index) + reliquat >= 0)
 			{
 				authorized_bypass := false
 			}
 			rune := ChooseRune(modif_max_index, true, authorized_bypass)
-			if(rune[1] = 0)
+			if (rune[1] = 0)
 			{
 				rune := ChooseRune(modif_max_index, false, authorized_bypass)
-				if(rune[1] = 0)
+				if (rune[1] = 0)
 				{
 					For _priority, objective in more_additional_index
 					{
@@ -2306,36 +2279,36 @@ MainRoutine() ; funMainRoutine
 						For index_instructions_effect, effect in instructions_index[_priority][key_effects]
 						{
 							index_def_effect := HasValue(def_index, effect)
-							if(index_def_effect = 0)
+							if (index_def_effect = 0)
 							{
 								MsgBox, erreur effet d objectif pas enregistre %effect%
 							}
-							else if(objective[index_def_effect] > modif_max_index[index_def_effect]) ; yolo condition changed 
+							else if (objective[index_def_effect] > modif_max_index[index_def_effect]) ; yolo condition changed 
 							{
 								index_over_1 := index_def_effect
 								break
 							}
 						}
-						if(index_over_1 != 0)
+						if (index_over_1 != 0)
 						{
-							if(objective[index_over_1] > vef_index[index_over_1] and (reliquat - GetCurrentOverPwr(index_over_1) + ConvertToReliquat(objective[index_over_1], def_index[index_over_1], 0) - ConvertToReliquat(vef_index[index_over_1], def_index[index_over_1], 0) >= 0)) ; yolo a test (prend en compte les over d'effets differents pour du reliquat
+							if (objective[index_over_1] > vef_index[index_over_1] and (reliquat - GetCurrentOverPwr(index_over_1) + ConvertToReliquat(objective[index_over_1], def_index[index_over_1], 0) - ConvertToReliquat(vef_index[index_over_1], def_index[index_over_1], 0) >= 0)) ; yolo a test (prend en compte les over d'effets differents pour du reliquat
 							{
 								auto_bypass := false
 								rune := ChooseRune(objective, false, false)
 							}
-							else if(objective[index_over_1] = vef_index[index_over_1] or (HasValue(instructions_index[_priority][key_effects], def_index[index_over_1]) = instructions_index[_priority][key_effects].Length() and objective[index_over_1] - max_index[index_over_1] = 1)) ; yolo condition changed
+							else if (objective[index_over_1] = vef_index[index_over_1] or (HasValue(instructions_index[_priority][key_effects], def_index[index_over_1]) = instructions_index[_priority][key_effects].Length() and objective[index_over_1] - max_index[index_over_1] = 1)) ; yolo condition changed
 							{
 								rune := ChooseRune(modif_max_index, false, true)
-								if(rune[1] = 0)
+								if (rune[1] = 0)
 								{
 									rune := ChooseRune(objective, false, true)
 								}
 							}
-							else if(_priority = instructions_index.Length()) ; yolo adapted condition
+							else if (_priority = instructions_index.Length()) ; yolo adapted condition
 							{
 								rune := ChooseRune(objective, false, true, true)
 							}
-							if(rune[1] != 0)
+							if (rune[1] != 0)
 							{
 								break
 							}
@@ -2344,16 +2317,16 @@ MainRoutine() ; funMainRoutine
 				}
 			}
 		}
-		if(rune[1] != 0)
+		if (rune[1] != 0)
 		{
 			attempt := UseRune(rune[1], rune[2])
-			if(attempt = true)
+			if (attempt = true)
 			{
 				ApplyAttemptChanges(rune[1], rune[2])
 			}
-			else
+			else if not Recalibrate(rune[1], rune[2])
 			{
-				Recalibrate()
+				return
 			}
 		}
 		else

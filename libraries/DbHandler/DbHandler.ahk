@@ -1,4 +1,4 @@
-﻿; Documentation
+; Documentation
 
 
 #Include %A_LineFile%\..\..\db\DBA.ahk
