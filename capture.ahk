@@ -2279,7 +2279,7 @@ UseRune(value, effect) ; funUseRune
 	cur_hex_fus := ""
 	
 	if (bright_hex_fus = "" or vbright_hex_fus = "")
-			CalibrateBrightHexFus(x, y, x_no_rune, y_no_rune, x_fus, y_fus)
+			CalibrateBrightHexFus(x, y)
 	; assurer que la bonne rune est presente dans l'atelier
 
 	while (cur_hex_fus != dark_hex_fus)
