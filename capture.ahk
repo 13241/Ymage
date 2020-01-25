@@ -31,7 +31,7 @@ CoordMode, Pixel, Screen ; fix default coordinates for pixel operations to those
 
 Hotkey, !Numpad0, Reloading, On
 Hotkey, !Numpad1, Calibrate, On
-Hotkey, !Numpad2, CurrentStatus, On
+Hotkey, !Numpad2, DbCurrentStatus, On
 Hotkey, !Numpad3, MainRoutine, On
 Hotkey, !Numpad5, Termination, On
 Hotkey, !Numpad6, TestEncoding, On ; keytest
@@ -86,20 +86,26 @@ CurrentStatus() ; funCurrentStatus
 	item_status := item_name . " : " . item_level . " => "
 	For index, final_floors in def_index
 	{
-		item_status := item_status . "///" . final_floors . "___" . vef_index[index] . "___" . min_index[index] . "___" . max_index[index] . "___" . modif_max_index[index]
+		item_status := item_status . "`n" . final_floors . "___" . vef_index[index] . "___" . min_index[index] . "___" . max_index[index] . "___" . modif_max_index[index]
 		For _priority, value in more_additional_index
 		{
 			item_status := item_status . "___" . value[index]
 		}
 	}
-	item_status := item_status . "///reliquat___" . reliquat
+	item_status := item_status . "`nreliquat___" . reliquat
 	For index, trash in trash_bin
 	{
-		item_status := item_status . "///trash___" . trash
+		item_status := item_status . "`ntrash___" . trash
 	}
-	item_status := item_status . "///destroyer___" . destroyer_effect
-	item_status := item_status . "///reliquat exception___" . reliquat_exception
-	MsgBox, 4, , %item_status% Insert into database?
+	item_status := item_status . "`ndestroyer___" . destroyer_effect
+	item_status := item_status . "`nreliquat exception___" . reliquat_exception
+	return item_status
+}
+
+DbCurrentStatus() ; funDbCurrentStatus
+{
+	out := CurrentStatus()
+	MsgBox, 4, , %out% Insert into database?
 	IfMsgBox Yes
 		dbhandler.InsertItem() ; MODIFIER
 }
@@ -210,11 +216,12 @@ Recalibrate(attempt_value, attempt_effect) ; funRecalibrate
 	prev_def_index := def_index
 
 	CaptureImage(pic_effect)
-	res := StructureOcrResult(ApplyOcr(pic_effect), pic_effect)
+	res := StructureOcrResult(ApplyOCR(pic_effect), pic_effect)
 	if (res[3])
 	{
 		vef_index := res[1]
 		def_index := res[2]
+		ConvertToKnownEffects(def_index)
 	}
 	else
 	{
@@ -256,11 +263,16 @@ Recalibrate(attempt_value, attempt_effect) ; funRecalibrate
 			change := true
 		}
 	}
-	if (change)
+	valid := false
+	out := CurrentStatus()
+	MsgBox, 4, , %out% valid status ?
+	IfMsgBox Yes
+		valid := true
+	if (valid and change)
 	{
 		ApplyAttemptChanges(attempt_value, attempt_effect)
 	}
-	return true
+	return valid
 }
 
 Calibrate() ; funCalibrate
@@ -389,7 +401,7 @@ Calibrate() ; funCalibrate
 		MsgBox, ocr_error
 		return
 	}
-	res := StructureOcrResult(ApplyOCR(pic_max), pic_max)[1]
+	res := StructureOcrResult(ApplyOCR(pic_max), pic_max)
 	if (res[3])
 	{
 		max_index := res[1]
@@ -417,8 +429,6 @@ Calibrate() ; funCalibrate
 	{
 		return
 	}
-
-	MsgBox, coucou1
 	
 	CalibrateInstructions()
 	
@@ -545,12 +555,13 @@ CaptureHiddenLines(new_item := true) ; funCaptureHiddenLines
 	{
 		SendInput {Click %x_asc_2% %y_asc_2% 0}
 		SendInput {WheelDown}
-		Sleep, 100
+		SendInput {Click 0 0 0}
 		PixelGetColor, hex_color_asc_3, %x_asc_3%, %y_asc_3%, Slow
 		while(hex_color_asc_3 != hex_color_asc_2)
 		{
+			SendInput {Click %x_asc_2% %y_asc_2% 0}
 			SendInput {WheelDown}
-			Sleep, 100
+			SendInput {Click 0 0 0}
 			PixelGetColor, hex_color_asc_3, %x_asc_3%, %y_asc_3%, Slow
 		}
 		
@@ -560,13 +571,15 @@ CaptureHiddenLines(new_item := true) ; funCaptureHiddenLines
 			CaptureImage(pic_max_2)
 		}
 		CaptureImage(pic_effect_2)
+		SendInput {Click %x_asc_2% %y_asc_2% 0}
 		SendInput {WheelUp}
-		Sleep, 100
+		SendInput {Click 0 0 0}
 		PixelGetColor, hex_color_asc_1, %x_asc_1%, %y_asc_1%, Slow
 		while(hex_color_asc_1 != hex_color_asc_2)
 		{
+			SendInput {Click %x_asc_2% %y_asc_2% 0}
 			SendInput {WheelUp}
-			Sleep, 100
+			SendInput {Click 0 0 0}
 			PixelGetColor, hex_color_asc_1, %x_asc_1%, %y_asc_1%, Slow
 		}
 		
@@ -1329,9 +1342,9 @@ ConvertToKnownEffects(ocr_def_index) ; funConvertToKnownEffects
 	return ocr_def_index
 }
 
-CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
+GetLastAttemptHistory() ; funGetLastAttemptHistory
 {
-	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y, last_history
+	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y
 	key_xy_s := "his_xy_s"
 	key_x_e := "his_x_e"
 	key_y_e := "his_y_e"
@@ -1368,7 +1381,14 @@ CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
 	StringReplace, history_result, history_result, `r, %dot_comma% , All
 	StringReplace, history_result, history_result, `n, %dot_comma% , All
 	StringReplace, history_result, history_result, %dot_comma%%dot_comma%, %dot_comma%, All
-	
+	return history_result
+}
+
+CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
+{
+	global last_history
+
+	history_result := GetLastAttemptHistory()
 	last_line := []
 	
 	if (InStr(last_history, history_result))
@@ -2091,7 +2111,7 @@ UseRune(value, effect) ; funUseRune
 {
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y, def_index, modif_max_index
 		, effects_index, key_blank, key_pa, key_ra, key_rune, hex_color_rune, hex_color_fusion, hex_color_inventory
-		, trash_bin
+		, trash_bin, last_history
 	; identifier la rune
 	from_inventory := false
 	x := 0
@@ -2193,19 +2213,24 @@ UseRune(value, effect) ; funUseRune
 		i := 0
 		while (no_hex_color_fusion != hex_color_fusion and i < 40)
 		{
+			SendInput {Ctrl Down}
 			SendInput {Click %x_no_rune% %y_no_rune% 2}
 			Random, delay_ms, 50, 100
 			Sleep, %delay_ms%
+			SendInput {Ctrl Up}
 			PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
 			i := i + 1
 		}
-		SendInput {Enter}
-		SendInput {Ctrl Down}
-		SendInput {Click %x_no_rune% %y_no_rune% 2}
-		Sleep, 100
-		SendInput {Ctrl Up}
-		SendInput {Click 0 0 0}
-		PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+		if (i = 40)
+		{
+			SendInput {Enter}
+			SendInput {Ctrl Down}
+			SendInput {Click %x_no_rune% %y_no_rune% 2}
+			Sleep, 100
+			SendInput {Ctrl Up}
+			SendInput {Click 0 0 0}
+			PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+		}
 	}
 	
 	SendInput {Click %x% %y% 2}
@@ -2220,7 +2245,7 @@ UseRune(value, effect) ; funUseRune
 		Sleep, %delay_ms%
 		PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
 	}
-	if (i = 40 and no_hex_color_fusion = hex_color_fusion)
+	if (i = 40)
 	{
 		return UseRune(value, effect)
 	}
@@ -2235,12 +2260,22 @@ UseRune(value, effect) ; funUseRune
 	while(no_hex_color_fusion != hex_color_fusion and i < 40)
 	{
 		i := i + 1
-		Sleep, 25
+		Sleep, 100
 		PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
 	}
 	if (i = 40)
 	{
-		return false
+		tmp := ""
+		history_result := GetLastAttemptHistory()
+		while (tmp != history_result)
+		{
+			tmp := history_result
+			history_result := GetLastAttemptHistory()
+		}
+		if (last_history = history_result)
+		{
+			return UseRune(value, effect)
+		}
 	}
 	return true
 }
