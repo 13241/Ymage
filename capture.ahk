@@ -215,6 +215,8 @@ Recalibrate(attempt_value, attempt_effect) ; funRecalibrate
 	prev_vef_index := vef_index
 	prev_def_index := def_index
 
+	; danger lag : appliquer la procedure ping
+
 	CaptureImage(pic_effect)
 	res := StructureOcrResult(ApplyOCR(pic_effect), pic_effect)
 	if (res[3])
@@ -1343,7 +1345,7 @@ ConvertToKnownEffects(ocr_def_index) ; funConvertToKnownEffects
 	return ocr_def_index
 }
 
-GetLastAttemptHistory() ; funGetLastAttemptHistory
+GetAttemptHistory() ; funGetAttemptHistory
 {
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y
 	key_xy_s := "his_xy_s"
@@ -1388,26 +1390,53 @@ GetLastAttemptHistory() ; funGetLastAttemptHistory
 	return history_result
 }
 
+GetTimedLastAttemptHistory() ; funGetTimedLastAttemptHistory
+{
+	global last_history
+
+	history_result := GetAttemptHistory()
+	i := 0
+	while (last_history = history_result and i < 40)
+	{
+		i := i + 1
+		Sleep, 25
+		history_result := GetAttemptHistory()
+	}
+	if (i = 40)
+	{
+		return ""
+	}
+	return history_result
+}
+
+GetLastAttemptHistory() ; funGetLastAttemptHistory
+{
+	global last_history
+
+	history_result := GetAttemptHistory()
+	while (last_history = history_result)
+	{
+		Sleep, 25
+		history_result := GetAttemptHistory()
+	}
+	return history_result
+}
+
 CaptureLastAttemptHistory(history_result) ; funCaptureLastAttemptHistory
 {
 	global last_history
 
 	last_line := []
 	
-	if (last_history = history_result))
-	{
-		history_result := GetLastAttemptHistory()
-		return CaptureLastAttemptHistory(history_result) ; [] before
-	}
-	else
-	{
-		last_history := history_result
-	}
+	last_history := history_result
 	
 	cut_history_result := StrSplit(history_result, ";")
 	For index, value in cut_history_result
 	{
-		last_line.InsertAt(1, value)
+		if (index > 1)
+		{
+			last_line.InsertAt(1, value)
+		}
 	}
 	return last_line
 }
@@ -1503,11 +1532,8 @@ ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; funApplyAtt
 		, instructions_index, key_effects, effects_index, locations_index, key_x, key_y, x_5_4_s, y_5_4_s
 		, width_5_4, height_5_4, hex_color_rune, dbhandler
 	lines_changes := CaptureLastAttemptHistory(history_result)
-	while(lines_changes.Length() = 0)
-	{
-		history_result := GetLastAttemptHistory()
-		lines_changes := CaptureLastAttemptHistory(history_result) ; yolo (on assume que si on est arrivé ici, la fusion de rune a eu lieu)
-	}
+
+	; tester si la ligne appliquee a l'etape d'avant n'a pas change
 	
 	line_changes := lines_changes[1]
 	; tracingChanges si on arrive ici, on peut capturer les infos courantes de l'objet
@@ -2274,28 +2300,14 @@ UseRune(value, effect) ; funUseRune
 	if (i = 100)
 	{
 		SendInput {Enter}
-		history_result := GetLastAttemptHistory()
-		i := 0
-		while (last_history = history_result and i < 40)
-		{
-			i := i + 1
-			history_result := GetLastAttemptHistory()
-		}
-		if (i = 40)
-		{
-			return ""
-		}
-		else
-		{
-			return history_result
-		}
+		history_result := GetTimedLastAttemptHistory()
+		return history_result
 	}
-	history_result := GetLastAttemptHistory()
-	while (last_history = history_result)
+	else
 	{
 		history_result := GetLastAttemptHistory()
+		return history_result
 	}
-	return history_result
 }
 
 MainRoutine() ; funMainRoutine

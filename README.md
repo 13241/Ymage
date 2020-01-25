@@ -141,3 +141,6 @@ nouvelle version de LevenshteinDistance
 <= cas étrange ou la capture semble bonne, mais le programme ajoute des runes ré pou à l'infini au dessus du max (idem precedent)
 <= levenshtein distance pour certains mots? à vérifier. (plusieurs recalibrages permettent de récupérer la rune donc probablement pas la cause)
 <= trouve résistance neutre plus facilement que résistance poussée avec "resistanoe Pousée" distance neutre : 5, distance poussée : 2 (pas normal)
+
+probleme : desynchronisation :
+=> mauvaise capture du clipboard ?
