@@ -270,7 +270,8 @@ Recalibrate(attempt_value, attempt_effect) ; funRecalibrate
 		valid := true
 	if (valid and change)
 	{
-		ApplyAttemptChanges(attempt_value, attempt_effect)
+		history_result := GetLastAttemptHistory()
+		ApplyAttemptChanges(attempt_value, attempt_effect, history_result)
 	}
 	return valid
 }
@@ -1353,9 +1354,11 @@ GetLastAttemptHistory() ; funGetLastAttemptHistory
 	x_e := ConvertToPx(x_5_4_s, locations_index[key_x_e][key_x], width_5_4)
 	y_e := ConvertToPx(y_5_4_s, locations_index[key_y_e][key_y], height_5_4)
 	
+	MouseMove, %x_s%, %y_s%
+	Sleep, 100
 	SendInput {Click Down %x_s% %y_s%}
-	SendInput {Click Up %x_e% %y_e%}
-	SendInput {Click Down %x_s% %y_s%} ; yolo fonctionne (beaucoup) mieux avec cette instruction en double
+	MouseMove, %x_e%, %y_e%
+	Sleep, 200
 	SendInput {Click Up %x_e% %y_e%}
 	clipboard=
 	SendInput ^{c}
@@ -1367,9 +1370,11 @@ GetLastAttemptHistory() ; funGetLastAttemptHistory
 		if (Mod(counter, 20) = 0)
 		{
 			SendInput {Enter}
+			MouseMove, %x_s%, %y_s%
+			Sleep, 100
 			SendInput {Click Down %x_s% %y_s%}
-			SendInput {Click Up %x_e% %y_e%}
-			SendInput {Click Down %x_s% %y_s%}
+			MouseMove, %x_e%, %y_e%
+			Sleep, 100
 			SendInput {Click Up %x_e% %y_e%}
 			SendInput ^{c}
 		}
@@ -1377,30 +1382,29 @@ GetLastAttemptHistory() ; funGetLastAttemptHistory
 	}
 	history_result := clipboard
 	
-	dot_comma := ";"
-	StringReplace, history_result, history_result, `r, %dot_comma% , All
-	StringReplace, history_result, history_result, `n, %dot_comma% , All
-	StringReplace, history_result, history_result, %dot_comma%%dot_comma%, %dot_comma%, All
+	history_result := StrReplace(history_result, "`r", ";")
+	history_result := StrReplace(history_result, "`n", ";")
+	history_result := StrReplace(history_result, ";;", ";")
 	return history_result
 }
 
-CaptureLastAttemptHistory() ; funCaptureLastAttemptHistory
+CaptureLastAttemptHistory(history_result) ; funCaptureLastAttemptHistory
 {
 	global last_history
 
-	history_result := GetLastAttemptHistory()
 	last_line := []
 	
-	if (InStr(last_history, history_result))
+	if (last_history = history_result))
 	{
-		return CaptureLastAttemptHistory() ; [] before
+		history_result := GetLastAttemptHistory()
+		return CaptureLastAttemptHistory(history_result) ; [] before
 	}
 	else
 	{
 		last_history := history_result
 	}
 	
-	cut_history_result := StrSplit(history_result, dot_comma)
+	cut_history_result := StrSplit(history_result, ";")
 	For index, value in cut_history_result
 	{
 		last_line.InsertAt(1, value)
@@ -1493,15 +1497,16 @@ AttemptResult(line) ; funAttemptResult
 	return line_status
 }
 
-ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
+ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; funApplyAttemptChanges
 {
 	global reliquat, vef_index, def_index, min_index, max_index, modif_max_index, more_additional_index
 		, instructions_index, key_effects, effects_index, locations_index, key_x, key_y, x_5_4_s, y_5_4_s
 		, width_5_4, height_5_4, hex_color_rune, dbhandler
-	lines_changes := CaptureLastAttemptHistory()
+	lines_changes := CaptureLastAttemptHistory(history_result)
 	while(lines_changes.Length() = 0)
 	{
-		lines_changes := CaptureLastAttemptHistory() ; yolo (on assume que si on est arrivé ici, la fusion de rune a eu lieu)
+		history_result := GetLastAttemptHistory()
+		lines_changes := CaptureLastAttemptHistory(history_result) ; yolo (on assume que si on est arrivé ici, la fusion de rune a eu lieu)
 	}
 	
 	line_changes := lines_changes[1]
@@ -1568,12 +1573,14 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 			}
 			if value is not integer
 			{
-				ApplyAttemptChanges(attempt_value, attempt_effect) ; yolo on refait la capture du clipboard, on assume que la fusion a été faite
+				history_result := GetLastAttemptHistory()
+				ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; yolo on refait la capture du clipboard, on assume que la fusion a été faite
 				return
 			}
 			else if (effect = "")
 			{
-				ApplyAttemptChanges(attempt_value, attempt_effect) ; yolo on refait la capture du clipboard, on assume que la fusion a été faite
+				history_result := GetLastAttemptHistory()
+				ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; yolo on refait la capture du clipboard, on assume que la fusion a été faite
 				return
 			}
 			else
@@ -1631,7 +1638,8 @@ ApplyAttemptChanges(attempt_value, attempt_effect) ; funApplyAttemptChanges
 				}
 				else
 				{
-					ApplyAttemptChanges(attempt_value, attempt_effect) ; yolo on refait la capture du clipboard, on assume que la fusion a été faite
+					history_result := GetLastAttemptHistory()
+					ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; yolo on refait la capture du clipboard, on assume que la fusion a été faite
 					return
 				}
 			}
@@ -2186,7 +2194,7 @@ UseRune(value, effect) ; funUseRune
 		if (x_index = 0)
 		{
 			MsgBox, Fatal _error _no rune found
-			return false
+			return ""
 		}
 		x := ConvertToPx(x_5_4_s, locations_index[key_xy_s][key_x], width_5_4, locations_index[key_x_d][key_x], x_index - 1)
 	}
@@ -2257,27 +2265,37 @@ UseRune(value, effect) ; funUseRune
 	; on peut certifier qu'on a fait le fusionner si on capture que fusionner est devenu gris après le clic
 	PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
 	i := 0
-	while(no_hex_color_fusion != hex_color_fusion and i < 40)
+	while(no_hex_color_fusion != hex_color_fusion and i < 100)
 	{
 		i := i + 1
-		Sleep, 100
+		Sleep, 25
 		PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
 	}
-	if (i = 40)
+	if (i = 100)
 	{
-		tmp := ""
+		SendInput {Enter}
 		history_result := GetLastAttemptHistory()
-		while (tmp != history_result)
+		i := 0
+		while (last_history = history_result and i < 40)
 		{
-			tmp := history_result
+			i := i + 1
 			history_result := GetLastAttemptHistory()
 		}
-		if (last_history = history_result)
+		if (i = 40)
 		{
-			return UseRune(value, effect)
+			return ""
+		}
+		else
+		{
+			return history_result
 		}
 	}
-	return true
+	history_result := GetLastAttemptHistory()
+	while (last_history = history_result)
+	{
+		history_result := GetLastAttemptHistory()
+	}
+	return history_result
 }
 
 MainRoutine() ; funMainRoutine
@@ -2354,10 +2372,10 @@ MainRoutine() ; funMainRoutine
 		}
 		if (rune[1] != 0)
 		{
-			attempt := UseRune(rune[1], rune[2])
-			if (attempt = true)
+			history_result := UseRune(rune[1], rune[2])
+			if (history_result != "")
 			{
-				ApplyAttemptChanges(rune[1], rune[2])
+				ApplyAttemptChanges(rune[1], rune[2], history_result)
 			}
 			else if not Recalibrate(rune[1], rune[2])
 			{
