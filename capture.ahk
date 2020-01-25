@@ -19,6 +19,7 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 #Persistent
 #Include %A_LineFile%\..\libraries\GDIP\GDIP.ahk
 #Include %A_LineFile%\..\libraries\DbHandler\DbHandler.ahk
+#include %A_LineFile%\..\libraries\Clip\Clip.ahk
 
 ; initialization
 
@@ -113,21 +114,23 @@ DbCurrentStatus() ; funDbCurrentStatus
 ; Reset all variable
 CleanAllGlobalVar() ; funCleanAllGlobalVar
 {
-	global mage_id_w, height_5_4, width_5_4, width_5_4, x_5_4_s, y_5_4_s, hex_color_rune, hex_color_fusion, hex_color_inventory
+	global mage_id_w, height_5_4, width_5_4, width_5_4, x_5_4_s, y_5_4_s, hex_color_rune, dark_hex_fus, hex_color_inventory
 		, effects_index, key_rune, key_blank, key_pa, key_ra, key_pwr, locations_index, key_x, key_y, floors_index, key_stdfloors
 		, key_basic_std, key_pa_std, key_basic_spe, key_pa_spe, final_floors_index, tolerances_index, over_floors_index, over_tolerances_index
 		, instructions_index, key_effects, key_values, min_index, max_index, vef_index, def_index, modif_max_index, more_additional_index
 		, trash_exception, current_trash, trash_bin, destroyer_effect, last_history, reliquat_exception, auto_bypass, over_index
 		, reliquat, rf_runes, rf_coordinates, rf_floors, rf_final_floors, rf_over_floors, rf_instructions, pic_min, pic_max, pic_effect
 		, pic_effline, pic_min_2, pic_max_2, pic_effect_2, pic_minline, pic_maxline, corrections_index, item_level, item_name, pic_lvl
-		, dbhandler
+		, dbhandler, bright_hex_fus, vbright_hex_fus
 	mage_id_w := ""
 	height_5_4 := 0
 	width_5_4 := 0
 	x_5_4_s := 0
 	y_5_4_s := 0
 	hex_color_rune := ""
-	hex_color_fusion := ""
+	dark_hex_fus := ""
+	bright_hex_fus := ""
+	vbright_hex_fus := ""
 	hex_color_inventory := ""
 
 	effects_index := {}
@@ -283,7 +286,7 @@ Calibrate() ; funCalibrate
 	Sleep, 500
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index, def_index
 		, rf_runes, rf_coordinates, rf_floors, rf_final_floors, rf_instructions, pic_min, pic_max, pic_effect
-		, hex_color_rune, hex_color_fusion, hex_color_inventory, locations_index, key_x, key_y, pic_min_2, pic_max_2
+		, hex_color_rune, dark_hex_fus, hex_color_inventory, locations_index, key_x, key_y, pic_min_2, pic_max_2
 		, pic_effect_2, rf_over_floors, item_level, item_name, dbhandler
 	CleanAllGlobalVar()
 	
@@ -333,7 +336,7 @@ Calibrate() ; funCalibrate
 	key_fus_xy := "fus_xy"
 	x_fus := ConvertToPx(x_5_4_s, locations_index[key_fus_xy][key_x], width_5_4)
 	y_fus := ConvertToPx(y_5_4_s, locations_index[key_fus_xy][key_y], height_5_4)
-	PixelGetColor, hex_color_fusion, %x_fus%, %y_fus%, Slow
+	PixelGetColor, dark_hex_fus, %x_fus%, %y_fus%, Slow
 	
 	key_xy_search := "sea_xy"
 	x_search := ConvertToPx(x_5_4_s, locations_index[key_xy_search][key_x], width_5_4)
@@ -438,6 +441,46 @@ Calibrate() ; funCalibrate
 	RegisterMaxPwrItemEffects()
 }
 
+CalibrateBrightHexFus(x, y, x_no_rune, y_no_rune, x_fus, y_fus) ; funCalibrateBrightHexFus
+{
+	global bright_hex_fus, vbright_hex_fus, dark_hex_fus
+
+	bright_hex_fus := dark_hex_fus
+	SendInput, {Click %x% %y%, 2}
+	while (bright_hex_fus = dark_hex_fus)
+	{
+		Sleep, 100
+		PixelGetColor bright_hex_fus, %x_fus%, %y_fus%, Slow
+	}
+	vbright_hex_fus := bright_hex_fus
+	SendInput, {Click %x_fus%, %y_fus% 0}
+	while (vbright_hex_fus = bright_hex_fus)
+	{
+		Sleep, 100
+		PixelGetColor vbright_hex_fus, %x_fus%, %y_fus%, Slow
+	}
+	cur_hex_fus := ""
+	while (cur_hex_fus != dark_hex_fus)
+	{
+		SendInput {Click %x_no_rune% %y_no_rune% 2}
+		SendInput {Ctrl Down}
+		Sleep, 100
+		SendInput {Ctrl Up}
+		PixelGetColor, cur_hex_fus, %x_fus%, %y_fus%, Slow
+	}
+}
+
+IsBrightHexFus(cur_hex_fus) ; funIsBrightHexFus
+{
+	global bright_hex_fus, vbright_hex_fus
+
+	if (cur_hex_fus = bright_hex_fus or cur_hex_fus = vbright_hex_fus)
+	{
+		return true
+	}
+	return false
+}
+
 RegisterMaxPwrItemEffects() ; funRegisterMaxPwrItemEffects
 {
 	global max_index, min_index, def_index, dbhandler
@@ -484,21 +527,7 @@ CaptureItemIds() ; funCaptureItemIds
 	
 	SendInput {Click %x_chat% %y_chat% 3}
 	
-	clipboard=
-	SendInput ^{c}
-	ClipWait, 0
-	counter := 0
-	while(ErrorLevel)
-	{
-		ClipWait, 0
-		if (Mod(counter, 20) = 0)
-		{
-			SendInput {Click %x_chat% %y_chat% 3}
-			SendInput ^{c}
-		}
-		counter := counter + 1
-	}
-	item_name := clipboard
+	item_name := Clip()
 	
 	bracket_open := "["
 	bracket_close := "]"
@@ -1356,33 +1385,9 @@ GetAttemptHistory() ; funGetAttemptHistory
 	x_e := ConvertToPx(x_5_4_s, locations_index[key_x_e][key_x], width_5_4)
 	y_e := ConvertToPx(y_5_4_s, locations_index[key_y_e][key_y], height_5_4)
 	
-	MouseMove, %x_s%, %y_s%
-	Sleep, 100
 	SendInput {Click Down %x_s% %y_s%}
-	MouseMove, %x_e%, %y_e%
-	Sleep, 200
 	SendInput {Click Up %x_e% %y_e%}
-	clipboard=
-	SendInput ^{c}
-	ClipWait, 0
-	counter := 0
-	while(ErrorLevel)
-	{
-		ClipWait, 0
-		if (Mod(counter, 20) = 0)
-		{
-			SendInput {Enter}
-			MouseMove, %x_s%, %y_s%
-			Sleep, 100
-			SendInput {Click Down %x_s% %y_s%}
-			MouseMove, %x_e%, %y_e%
-			Sleep, 100
-			SendInput {Click Up %x_e% %y_e%}
-			SendInput ^{c}
-		}
-		counter := counter + 1
-	}
-	history_result := clipboard
+	history_result := Clip()
 	
 	history_result := StrReplace(history_result, "`r", ";")
 	history_result := StrReplace(history_result, "`n", ";")
@@ -1396,7 +1401,7 @@ GetTimedLastAttemptHistory() ; funGetTimedLastAttemptHistory
 
 	history_result := GetAttemptHistory()
 	i := 0
-	while (last_history = history_result and i < 40)
+	while (InStr(last_history, history_result) and i < 40)
 	{
 		i := i + 1
 		Sleep, 25
@@ -1414,7 +1419,7 @@ GetLastAttemptHistory() ; funGetLastAttemptHistory
 	global last_history
 
 	history_result := GetAttemptHistory()
-	while (last_history = history_result)
+	while (InStr(last_history, history_result))
 	{
 		Sleep, 25
 		history_result := GetAttemptHistory()
@@ -1539,8 +1544,14 @@ ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; funApplyAtt
 	; tracingChanges si on arrive ici, on peut capturer les infos courantes de l'objet
 	; à ce stade, la fonction peut "echouer", il ne faut ici capturer que le statut (sc, ec, sn)
 	; result est donc determinable ici
+	attempt_result := ""
 	attempt_result := AttemptResult(line_changes)
-	
+	while (attempt_result = "")
+	{
+		line_changes := CaptureLastAttemptHistory(GetLastAttemptHistory())[1]
+		attempt_result := AttemptResult(line_changes)
+	}
+
 	tampon_reliquat := 0
 	
 	; attemptedPwrEffect (=runepwr based on current value)
@@ -2144,8 +2155,8 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 UseRune(value, effect) ; funUseRune 
 {
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y, def_index, modif_max_index
-		, effects_index, key_blank, key_pa, key_ra, key_rune, hex_color_rune, hex_color_fusion, hex_color_inventory
-		, trash_bin, last_history
+		, effects_index, key_blank, key_pa, key_ra, key_rune, hex_color_rune, dark_hex_fus, hex_color_inventory
+		, trash_bin, last_history, bright_hex_fus, vbright_hex_fus
 	; identifier la rune
 	from_inventory := false
 	x := 0
@@ -2235,24 +2246,26 @@ UseRune(value, effect) ; funUseRune
 	key_fus_xy := "fus_xy"
 	x_fus := ConvertToPx(x_5_4_s, locations_index[key_fus_xy][key_x], width_5_4)
 	y_fus := ConvertToPx(y_5_4_s, locations_index[key_fus_xy][key_y], height_5_4)
-	no_hex_color_fusion := ""
+	cur_hex_fus := ""
 	
+	if (bright_hex_fus = "" or vbright_hex_fus = "")
+			CalibrateBrightHexFus(x, y, x_no_rune, y_no_rune, x_fus, y_fus)
 	; assurer que la bonne rune est presente dans l'atelier
 
-	while (no_hex_color_fusion != hex_color_fusion)
+	while (cur_hex_fus != dark_hex_fus)
 	{
 		SendInput, {Click, %x% %y%, 2}
 		Random, delay_ms, 50, 100
 		Sleep, %delay_ms%
 		i := 0
-		while (no_hex_color_fusion != hex_color_fusion and i < 40)
+		while (cur_hex_fus != dark_hex_fus and i < 40)
 		{
 			SendInput {Ctrl Down}
 			SendInput {Click %x_no_rune% %y_no_rune% 2}
 			Random, delay_ms, 50, 100
 			Sleep, %delay_ms%
 			SendInput {Ctrl Up}
-			PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+			PixelGetColor, cur_hex_fus, %x_fus%, %y_fus%, Slow
 			i := i + 1
 		}
 		if (i = 40)
@@ -2262,22 +2275,21 @@ UseRune(value, effect) ; funUseRune
 			SendInput {Click %x_no_rune% %y_no_rune% 2}
 			Sleep, 100
 			SendInput {Ctrl Up}
-			SendInput {Click 0 0 0}
-			PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+			PixelGetColor, cur_hex_fus, %x_fus%, %y_fus%, Slow
 		}
 	}
 	
 	SendInput {Click %x% %y% 2}
 	
-	PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+	PixelGetColor, cur_hex_fus, %x_fus%, %y_fus%, Slow
 	
 	i := 0
-	while(no_hex_color_fusion = hex_color_fusion and i < 40)
+	while(cur_hex_fus = dark_hex_fus and i < 40)
 	{
 		i := i + 1
 		Random, delay_ms, 50, 100
 		Sleep, %delay_ms%
-		PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+		PixelGetColor, cur_hex_fus, %x_fus%, %y_fus%, Slow
 	}
 	if (i = 40)
 	{
@@ -2289,22 +2301,46 @@ UseRune(value, effect) ; funUseRune
 	SendInput {Click %x_fus% %y_fus% 2}
 	
 	; on peut certifier qu'on a fait le fusionner si on capture que fusionner est devenu gris après le clic
-	PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+	PixelGetColor, cur_hex_fus, %x_fus%, %y_fus%, Slow
 	i := 0
-	while(no_hex_color_fusion != hex_color_fusion and i < 100)
+	while(cur_hex_fus != dark_hex_fus and i < 100)
 	{
 		i := i + 1
 		Sleep, 25
-		PixelGetColor, no_hex_color_fusion, %x_fus%, %y_fus%, Slow
+		PixelGetColor, cur_hex_fus, %x_fus%, %y_fus%, Slow
 	}
-	if (i = 100)
+	if (i = 100 and cur_hex_fus != dark_hex_fus)
 	{
-		SendInput {Enter}
+		if (not IsBrightHexFus(cur_hex_fus))
+		{
+			while (cur_hex_fus != dark_hex_fus)
+			{
+				SendInput {Enter}
+				Sleep, 100
+				PixelGetColor, cur_hex_fus, %x_fus%, %y_fus%, Slow
+			}
+		}
 		history_result := GetTimedLastAttemptHistory()
 		return history_result
 	}
 	else
 	{
+		i := 0
+		while (cur_hex_fus = dark_hex_fus i < 100)
+		{
+			Sleep, 25
+			PixelGetColor, cur_hex_fus, %x_fus%, %y_fus%, Slow
+			i := i + 1
+		}
+		if (not IsBrightHexFus(cur_hex_fus))
+		{
+			while (cur_hex_fus != dark_hex_fus)
+			{
+				SendInput {Enter}
+				Sleep, 100
+				PixelGetColor, cur_hex_fus, %x_fus%, %y_fus%, Slow
+			}
+		}
 		history_result := GetLastAttemptHistory()
 		return history_result
 	}
@@ -2399,8 +2435,8 @@ MainRoutine() ; funMainRoutine
 			finished := true
 		}
 	}
-	MsgBox, Objet terminé _ reliquat _ %reliquat%
 	ForceInsertAttempts()
+	MsgBox, Objet terminé _ reliquat _ %reliquat%
 }
 
 ; bottom

@@ -144,3 +144,7 @@ nouvelle version de LevenshteinDistance
 
 probleme : desynchronisation :
 => mauvaise capture du clipboard ?
+
+-> pouvoir editer le msgbox de confirmation
+
+-> faire la verification du dernier reliquat ajoute
