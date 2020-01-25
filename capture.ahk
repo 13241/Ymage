@@ -121,12 +121,16 @@ CleanAllGlobalVar() ; funCleanAllGlobalVar
 		, trash_exception, current_trash, trash_bin, destroyer_effect, last_history, reliquat_exception, auto_bypass, over_index
 		, reliquat, rf_runes, rf_coordinates, rf_floors, rf_final_floors, rf_over_floors, rf_instructions, pic_min, pic_max, pic_effect
 		, pic_effline, pic_min_2, pic_max_2, pic_effect_2, pic_minline, pic_maxline, corrections_index, item_level, item_name, pic_lvl
-		, dbhandler, bright_hex_fus, vbright_hex_fus
+		, dbhandler, bright_hex_fus, vbright_hex_fus, x_fus, y_fus, x_no_rune, y_no_rune
 	mage_id_w := ""
 	height_5_4 := 0
 	width_5_4 := 0
 	x_5_4_s := 0
 	y_5_4_s := 0
+	x_fus := 0
+	y_fus := 0
+	x_no_rune := 0
+	y_no_rune := 0
 	hex_color_rune := ""
 	dark_hex_fus := ""
 	bright_hex_fus := ""
@@ -275,7 +279,7 @@ Recalibrate(attempt_value, attempt_effect) ; funRecalibrate
 		valid := true
 	if (valid and change)
 	{
-		history_result := GetLastAttemptHistory()
+		history_result := GetLastAttemptHistory(attempt_value, attempt_effect)
 		ApplyAttemptChanges(attempt_value, attempt_effect, history_result)
 	}
 	return valid
@@ -287,7 +291,7 @@ Calibrate() ; funCalibrate
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, mage_id_w, min_index, max_index, vef_index, def_index
 		, rf_runes, rf_coordinates, rf_floors, rf_final_floors, rf_instructions, pic_min, pic_max, pic_effect
 		, hex_color_rune, dark_hex_fus, hex_color_inventory, locations_index, key_x, key_y, pic_min_2, pic_max_2
-		, pic_effect_2, rf_over_floors, item_level, item_name, dbhandler
+		, pic_effect_2, rf_over_floors, item_level, item_name, dbhandler, x_fus, y_fus, x_no_rune, y_no_rune
 	CleanAllGlobalVar()
 	
 	SysGet, width_margin_w, 32 ; window resizable zone, horizontal size
@@ -441,9 +445,9 @@ Calibrate() ; funCalibrate
 	RegisterMaxPwrItemEffects()
 }
 
-CalibrateBrightHexFus(x, y, x_no_rune, y_no_rune, x_fus, y_fus) ; funCalibrateBrightHexFus
+CalibrateBrightHexFus(x, y) ; funCalibrateBrightHexFus
 {
-	global bright_hex_fus, vbright_hex_fus, dark_hex_fus
+	global bright_hex_fus, vbright_hex_fus, dark_hex_fus, x_fus, y_fus, x_no_rune, y_no_rune
 
 	bright_hex_fus := dark_hex_fus
 	SendInput, {Click %x% %y%, 2}
@@ -1386,9 +1390,16 @@ GetAttemptHistory() ; funGetAttemptHistory
 	y_e := ConvertToPx(y_5_4_s, locations_index[key_y_e][key_y], height_5_4)
 	
 	SendInput {Click Down %x_s% %y_s%}
+	Sleep, 25
 	SendInput {Click Up %x_e% %y_e%}
+	Sleep, 25
 	history_result := Clip()
-	
+
+	if (history_result = "")
+	{
+		SendInput {Enter}
+		return GetAttemptHistory()
+	}
 	history_result := StrReplace(history_result, "`r", ";")
 	history_result := StrReplace(history_result, "`n", ";")
 	history_result := StrReplace(history_result, ";;", ";")
@@ -1401,29 +1412,55 @@ GetTimedLastAttemptHistory() ; funGetTimedLastAttemptHistory
 
 	history_result := GetAttemptHistory()
 	i := 0
-	while (InStr(last_history, history_result) and i < 40)
+	while (InStr(last_history, history_result) and i < 10)
 	{
 		i := i + 1
-		Sleep, 25
+		Sleep, 100
 		history_result := GetAttemptHistory()
 	}
-	if (i = 40)
+	if (i = 10)
 	{
 		return ""
 	}
+	validate_history := GetAttemptHistory()
+	if (validate_history != history_result)
+		return GetTimedLastAttemptHistory()
 	return history_result
 }
 
-GetLastAttemptHistory() ; funGetLastAttemptHistory
+GetLastAttemptHistory(value, effect) ; funGetLastAttemptHistory
 {
-	global last_history
+	global last_history, x_fus, y_fus, x_no_rune, y_no_rune
 
 	history_result := GetAttemptHistory()
-	while (InStr(last_history, history_result))
+	i := 0
+	while (InStr(last_history, history_result) and i < 40)
 	{
-		Sleep, 25
+		Sleep, 100
 		history_result := GetAttemptHistory()
+		i := i + 1
 	}
+	if (i = 10)
+	{
+		cur_hex_fus = ""
+		i := 0
+		while (cur_hex_fus != dark_hex_fus and i < 40)
+		{
+			SendInput {Ctrl Down}
+			SendInput {Click %x_no_rune% %y_no_rune% 2}
+			Sleep, 100
+			SendInput {Ctrl Up}
+			PixelGetColor, cur_hex_fus, %x_fus%, %y_fus%, Slow
+			i := i + 1
+		}
+		if (i = 40)
+			return GetLastAttemptHistory(value, effect)
+		else
+			return UseRune(value, effect)
+	}
+	validate_history := GetAttemptHistory()
+	if (validate_history != history_result)
+		return GetLastAttemptHistory(value, effect)
 	return history_result
 }
 
@@ -1548,7 +1585,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; funApplyAtt
 	attempt_result := AttemptResult(line_changes)
 	while (attempt_result = "")
 	{
-		line_changes := CaptureLastAttemptHistory(GetLastAttemptHistory())[1]
+		line_changes := CaptureLastAttemptHistory(GetLastAttemptHistory(attempt_value, attempt_effect))[1]
 		attempt_result := AttemptResult(line_changes)
 	}
 
@@ -1610,13 +1647,13 @@ ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; funApplyAtt
 			}
 			if value is not integer
 			{
-				history_result := GetLastAttemptHistory()
+				history_result := GetLastAttemptHistory(attempt_value, attempt_effect)
 				ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; yolo on refait la capture du clipboard, on assume que la fusion a été faite
 				return
 			}
 			else if (effect = "")
 			{
-				history_result := GetLastAttemptHistory()
+				history_result := GetLastAttemptHistory(attempt_value, attempt_effect)
 				ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; yolo on refait la capture du clipboard, on assume que la fusion a été faite
 				return
 			}
@@ -1675,7 +1712,7 @@ ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; funApplyAtt
 				}
 				else
 				{
-					history_result := GetLastAttemptHistory()
+					history_result := GetLastAttemptHistory(attempt_value, attempt_effect)
 					ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; yolo on refait la capture du clipboard, on assume que la fusion a été faite
 					return
 				}
@@ -2156,7 +2193,7 @@ UseRune(value, effect) ; funUseRune
 {
 	global height_5_4, width_5_4, x_5_4_s, y_5_4_s, locations_index, key_x, key_y, def_index, modif_max_index
 		, effects_index, key_blank, key_pa, key_ra, key_rune, hex_color_rune, dark_hex_fus, hex_color_inventory
-		, trash_bin, last_history, bright_hex_fus, vbright_hex_fus
+		, trash_bin, last_history, bright_hex_fus, vbright_hex_fus, x_fus, y_fus, x_no_rune, y_no_rune
 	; identifier la rune
 	from_inventory := false
 	x := 0
@@ -2238,14 +2275,7 @@ UseRune(value, effect) ; funUseRune
 	
 	delay_ms := 0
 	
-	key_color_xy := "col_xy"
-	x_no_rune := ConvertToPx(x_5_4_s, locations_index[key_color_xy][key_x], width_5_4)
-	y_no_rune := ConvertToPx(y_5_4_s, locations_index[key_color_xy][key_y], height_5_4)
 	no_hex_color_rune := ""
-	
-	key_fus_xy := "fus_xy"
-	x_fus := ConvertToPx(x_5_4_s, locations_index[key_fus_xy][key_x], width_5_4)
-	y_fus := ConvertToPx(y_5_4_s, locations_index[key_fus_xy][key_y], height_5_4)
 	cur_hex_fus := ""
 	
 	if (bright_hex_fus = "" or vbright_hex_fus = "")
@@ -2341,7 +2371,7 @@ UseRune(value, effect) ; funUseRune
 				PixelGetColor, cur_hex_fus, %x_fus%, %y_fus%, Slow
 			}
 		}
-		history_result := GetLastAttemptHistory()
+		history_result := GetLastAttemptHistory(value, effect)
 		return history_result
 	}
 }

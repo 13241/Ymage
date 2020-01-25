@@ -145,6 +145,9 @@ nouvelle version de LevenshteinDistance
 probleme : desynchronisation :
 => mauvaise capture du clipboard ?
 
+-> validation du clipboard plus serieuse
+=> valider une selection clipboard seulement si la tentative precedente dans la liste est la derniere tentative dans la version precedente
+
 -> pouvoir editer le msgbox de confirmation
 
 -> faire la verification du dernier reliquat ajoute
