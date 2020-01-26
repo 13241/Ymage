@@ -151,3 +151,5 @@ probleme : desynchronisation :
 -> pouvoir editer le msgbox de confirmation
 
 -> faire la verification du dernier reliquat ajoute
+
+-> probleme d'over 2 force -> 1 pa blocage

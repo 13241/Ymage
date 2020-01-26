@@ -217,7 +217,7 @@ ForceInsertAttempts() ; funForceInsertAttempts
 
 Recalibrate(attempt_value, attempt_effect) ; funRecalibrate
 {
-	global pic_effect, pic_effect_2, vef_index, def_index
+	global pic_effect, pic_effect_2, vef_index, def_index, reliquat
 
 	prev_vef_index := vef_index
 	prev_def_index := def_index
@@ -273,6 +273,7 @@ Recalibrate(attempt_value, attempt_effect) ; funRecalibrate
 		}
 	}
 	valid := false
+	reliquat := 0
 	out := CurrentStatus()
 	MsgBox, 4, , %out% valid status ?
 	IfMsgBox Yes
@@ -1456,7 +1457,7 @@ GetLastAttemptHistory(value, effect) ; funGetLastAttemptHistory
 		if (i = 40)
 			return GetLastAttemptHistory(value, effect)
 		else
-			return UseRune(value, effect)
+			return ""
 	}
 	validate_history := GetAttemptHistory()
 	if (validate_history != history_result)
