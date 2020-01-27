@@ -532,7 +532,21 @@ CaptureItemIds() ; funCaptureItemIds
 	
 	SendInput {Click %x_chat% %y_chat% 3}
 	
-	item_name := Clip()
+	clipboard=
+	SendInput ^{c}
+	ClipWait, 0
+	counter := 0
+	while(ErrorLevel)
+	{
+		ClipWait, 0
+		if (Mod(counter, 20) = 0)
+		{
+			SendInput {Click %x_chat% %y_chat% 3}
+			SendInput ^{c}
+		}
+		counter := counter + 1
+	}
+	item_name := clipboard
 	
 	bracket_open := "["
 	bracket_close := "]"
@@ -675,10 +689,6 @@ CaptureHiddenLines(new_item := true) ; funCaptureHiddenLines
 				}
 			}
 		}
-	}
-	else
-	{
-		return false
 	}
 	return true
 }
