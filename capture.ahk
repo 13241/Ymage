@@ -12,7 +12,8 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 ; => full vertical screen window : -8px inside the screen for title bar(vertical up) (+16px widht, +8px height)
 ; 5:4 std resolution ratio game
 ;
-; IMPORTANT : text recognition on picture works better if each line has the same height ? Not entirely proved, works better if light pixel on top (1 determinist proof (MIN))
+; IMPORTANT : text recognition on picture works better if each line has the same height ? Not entirely proved, 
+; works better if light pixel on top (1 determinist proof (MIN))
 ;
 ; force maximalize window for most accurate resolution
 
@@ -75,19 +76,24 @@ Reloading() ; funReloading
 TestEncoding() ; funTestEncoding
 {
 	special := "éÈÉàÁÀ"
-	MsgBox, test valid encoding : %special% éÈÉàÁÀ should be eEEaAA eEEaAA with all kind of accents : if not please convert to ISO-8859-1
+	MsgBox, 
+		( Join`s
+		test valid encoding : %special% éÈÉàÁÀ should be eEEaAA eEEaAA with all kind of accents : if not please
+		convert to ISO-8859-1
+		)
 }
 
 ; Display current status
 CurrentStatus() ; funCurrentStatus
 {
-	global effects_index, locations_index, floors_index, final_floors_index, tolerances_index, max_index, min_index, vef_index, def_index
-		, instructions_index, modif_max_index, reliquat, more_additional_index, trash_bin, destroyer_effect, reliquat_exception, item_level
-		, item_name, dbhandler
+	global effects_index, locations_index, floors_index, final_floors_index, tolerances_index, max_index, min_index
+		, vef_index, def_index, instructions_index, modif_max_index, reliquat, more_additional_index, trash_bin
+		, destroyer_effect, reliquat_exception, item_level, item_name, dbhandler
 	item_status := item_name . " : " . item_level . " => "
 	For index, final_floors in def_index
 	{
-		item_status := item_status . "`n" . final_floors . "___" . vef_index[index] . "___" . min_index[index] . "___" . max_index[index] . "___" . modif_max_index[index]
+		item_status := item_status . "`n" . final_floors . "___" . vef_index[index] . "___" . min_index[index]
+			. "___" . max_index[index] . "___" . modif_max_index[index]
 		For _priority, value in more_additional_index
 		{
 			item_status := item_status . "___" . value[index]
@@ -114,14 +120,16 @@ DbCurrentStatus() ; funDbCurrentStatus
 ; Reset all variable
 CleanAllGlobalVar() ; funCleanAllGlobalVar
 {
-	global mage_id_w, height_5_4, width_5_4, width_5_4, x_5_4_s, y_5_4_s, hex_color_rune, dark_hex_fus, hex_color_inventory
-		, effects_index, key_rune, key_blank, key_pa, key_ra, key_pwr, locations_index, key_x, key_y, floors_index, key_stdfloors
-		, key_basic_std, key_pa_std, key_basic_spe, key_pa_spe, final_floors_index, tolerances_index, over_floors_index, over_tolerances_index
-		, instructions_index, key_effects, key_values, min_index, max_index, vef_index, def_index, modif_max_index, more_additional_index
-		, trash_exception, current_trash, trash_bin, destroyer_effect, last_history, reliquat_exception, auto_bypass, over_index
-		, reliquat, rf_runes, rf_coordinates, rf_floors, rf_final_floors, rf_over_floors, rf_instructions, pic_min, pic_max, pic_effect
-		, pic_effline, pic_min_2, pic_max_2, pic_effect_2, pic_minline, pic_maxline, corrections_index, item_level, item_name, pic_lvl
-		, dbhandler, bright_hex_fus, vbright_hex_fus, x_fus, y_fus, x_no_rune, y_no_rune
+	global mage_id_w, height_5_4, width_5_4, width_5_4, x_5_4_s, y_5_4_s, hex_color_rune, dark_hex_fus
+		, hex_color_inventory, effects_index, key_rune, key_blank, key_pa, key_ra, key_pwr, locations_index, key_x
+		, key_y, floors_index, key_stdfloors, key_basic_std, key_pa_std, key_basic_spe, key_pa_spe, final_floors_index
+		, tolerances_index, over_floors_index, over_tolerances_index, instructions_index, key_effects, key_values
+		, min_index, max_index, vef_index, def_index, modif_max_index, more_additional_index, trash_exception
+		, current_trash, trash_bin, destroyer_effect, last_history, reliquat_exception, auto_bypass, over_index
+		, reliquat, rf_runes, rf_coordinates, rf_floors, rf_final_floors, rf_over_floors, rf_instructions, pic_min
+		, pic_max, pic_effect, pic_effline, pic_min_2, pic_max_2, pic_effect_2, pic_minline, pic_maxline
+		, corrections_index, item_level, item_name, pic_lvl, dbhandler, bright_hex_fus, vbright_hex_fus, x_fus, y_fus
+		, x_no_rune, y_no_rune
 	mage_id_w := ""
 	height_5_4 := 0
 	width_5_4 := 0
@@ -298,17 +306,21 @@ Calibrate() ; funCalibrate
 	SysGet, width_margin_w, 32 ; window resizable zone, horizontal size
 	SysGet, height_margin_w, 33 ; window resizable zone, vertical size
 	SysGet, border_w, 4 ; height of window title bar
-	SysGet, x_w, MonitorWorkArea ; represents usables coordinates of the screen. four variables, add Left Right Top Bottom to get either of them
+	SysGet, x_w, MonitorWorkArea ; represents usables coordinates of the screen. four variables, add Left Right Top 
+								 ; Bottom to get either of them
 	WinMaximize, A ; current window
 	WinGetTitle, mage_id_w, A
-	WinGetPos, x_tw, y_tw, width_tw, height_tw, A ; positions and sizes of the active window, with all borders and margins
+	WinGetPos, x_tw, y_tw, width_tw, height_tw, A ; positions and sizes of the active window, with all borders and
+												  ; margins
 	MouseGetPos, x_m, y_m ; positions of the mouse, reference is the active window (with all borders)
 	
-	; 1096.25 => black margin 220.875 => 220 black pixel, 221 is colored => +1096 = 1317, px220&px1318 are transluscent (design), 1318->1538 black (margin 62), reasoning with first = 1 (not 0)
+	; 1096.25 => black margin 220.875 => 220 black pixel, 221 is colored => +1096 = 1317, px220&px1318 are transluscent
+	; (design), 1318->1538 black (margin 62), reasoning with first = 1 (not 0)
 	height_5_4 := height_tw - 2 * height_margin_w - border_w
 	width_5_4 := height_5_4 / 4 * 5
 	x_5_4_s := (x_wLeft - 1) + (width_tw - 2 * width_margin_w - width_5_4) // 2 + 1
-	; size of toolbar - 1 (to get position of last pixel) + black border floored + 1px fade = position of first "coloured" pixel
+	; size of toolbar - 1 (to get position of last pixel) + black border floored + 1px fade = position of first 
+	; "coloured" pixel
 	
 	x_5_4_e := x_5_4_s + width_5_4 // 1
 	; position of last "coloured" pixel (before last fade px)
@@ -717,7 +729,8 @@ CalibrateInstructions() ; funCalibrateInstructions
 			min_index[c_index] := 0
 		}
 		modif_max_index[c_index] := max_index[c_index]
-		if (max_index[c_index] < vef_index[c_index] and def_index[c_index] != destroyer_effect) ; yolo teste si un over est present au calibrage
+		if (max_index[c_index] < vef_index[c_index] and def_index[c_index] != destroyer_effect)
+		; yolo teste si un over est present au calibrage
 		{
 			over_index := c_index
 		}
@@ -741,7 +754,8 @@ CalibrateInstructions() ; funCalibrateInstructions
 				{
 					over_index := 0
 				}
-				if (modif_max_index[d_index] > instructions[key_values][m_index]) ; yolo condition changed (before test if not null)
+				if (modif_max_index[d_index] > instructions[key_values][m_index])
+				; yolo condition changed (before test if not null)
 				{
 					modif_max_index[d_index] := instructions[key_values][m_index]
 					For sub_priority, all_priorities in more_additional_index
@@ -825,7 +839,8 @@ AddToEffects_Index(line) ; funAddToEffects_Index
 
 AddToInstructions_Index(line) ; funAddToInstructions_Index
 {
-	global instructions_index, key_effects, key_values, reliquat_exception, trash_bin, destroyer_effect, corrections_index
+	global instructions_index, key_effects, key_values, reliquat_exception, trash_bin, destroyer_effect
+		, corrections_index
 	StringReplace, line, line, `r, , All
 	StringReplace, line, line, `n, , All
 	keys := StrSplit(line, ";")
@@ -982,9 +997,14 @@ CaptureImage(pic_name, line := 0, decal_y := 0, decal_x := 0) ; funCaptureImage
 		key_y_de := pic_name . "_y_de"
 		key_x_e := pic_name . "_x_e"
 		x_s := ConvertToPx(x_5_4_s, locations_index[key_xy_s][key_x], width_5_4)
-		y_s := ConvertToPx(y_5_4_s + decal_y, locations_index[key_xy_s][key_y], height_5_4, locations_index[key_y_d][key_y], line - 1)
+		y_s := ConvertToPx(y_5_4_s + decal_y, locations_index[key_xy_s][key_y], height_5_4
+			, locations_index[key_y_d][key_y], line - 1)
 		width := ConvertToPx(x_5_4_s, locations_index[key_x_e][key_x], width_5_4) - x_s - decal_x
-		height := ConvertToPx(y_5_4_s + decal_y, locations_index[key_xy_s][key_y] + locations_index[key_y_de][key_y], height_5_4, locations_index[key_y_d][key_y], line - 1) - y_s
+		height := ConvertToPx(y_5_4_s + decal_y
+			, locations_index[key_xy_s][key_y] + locations_index[key_y_de][key_y]
+			, height_5_4
+			, locations_index[key_y_d][key_y]
+			, line - 1) - y_s
 	}
 	else
 	{
@@ -1071,8 +1091,8 @@ ApplyOCR(pic_name) ; funApplyOCR
 
 StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 {
-	global pic_effline, pic_minline, pic_maxline, pic_min, pic_max, pic_effect, locations_index, key_y, height_5_4, width_5_4, key_x
-		, pic_min_2, pic_max_2, pic_effect_2
+	global pic_effline, pic_minline, pic_maxline, pic_min, pic_max, pic_effect, locations_index, key_y, height_5_4
+		, width_5_4, key_x, pic_min_2, pic_max_2, pic_effect_2
 	pic_nameline := ""
 	if (pic_name = pic_min or pic_name = pic_min_2)
 	{
@@ -1211,7 +1231,8 @@ StructureOcrResult(expression, pic_name) ; funStructureOcrResult
 					temp_def_index.Push(SubStr(value, position + 1))
 					continue
 				}
-				else if (StrLen(nbr) <= 4 and StrLen(nbr) > 0 and SubStr(nbr, 1, 1) != "%") ; yolo empeche usage de rune de chasse (osef)
+				else if (StrLen(nbr) <= 4 and StrLen(nbr) > 0 and SubStr(nbr, 1, 1) != "%")
+				; yolo empeche usage de rune de chasse (osef)
 				{
 					j := i
 					delta := 0
@@ -1659,13 +1680,15 @@ ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; funApplyAtt
 			if value is not integer
 			{
 				history_result := GetLastAttemptHistory(attempt_value, attempt_effect)
-				ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; yolo on refait la capture du clipboard, on assume que la fusion a été faite
+				ApplyAttemptChanges(attempt_value, attempt_effect, history_result) 
+				; yolo on refait la capture du clipboard, on assume que la fusion a été faite
 				return
 			}
 			else if (effect = "")
 			{
 				history_result := GetLastAttemptHistory(attempt_value, attempt_effect)
-				ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; yolo on refait la capture du clipboard, on assume que la fusion a été faite
+				ApplyAttemptChanges(attempt_value, attempt_effect, history_result) 
+				; yolo on refait la capture du clipboard, on assume que la fusion a été faite
 				return
 			}
 			else
@@ -1700,7 +1723,8 @@ ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; funApplyAtt
 					tampon_changes[i_ef_index]["value"] := value
 					tampon_changes[i_ef_index]["effect"] := effect
 					tampon_changes[i_ef_index]["operation"] := "modify"
-					if (max_index[i_ef_index] = 0 and vef_index[i_ef_index] = 0 and min_index[i_ef_index] = 0 and modif_max_index[i_ef_index] = 0)
+					if (max_index[i_ef_index] = 0 and vef_index[i_ef_index] = 0 
+						and min_index[i_ef_index] = 0 and modif_max_index[i_ef_index] = 0)
 					{
 						instructed_effect := false
 						For _priority, instruction in instructions_index
@@ -1724,13 +1748,15 @@ ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; funApplyAtt
 				else
 				{
 					history_result := GetLastAttemptHistory(attempt_value, attempt_effect)
-					ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; yolo on refait la capture du clipboard, on assume que la fusion a été faite
+					ApplyAttemptChanges(attempt_value, attempt_effect, history_result) 
+					; yolo on refait la capture du clipboard, on assume que la fusion a été faite
 					return
 				}
 			}
 		}
 	}
-	; tracingChanges si on arrive ici, on peut envoyer les infos en database, on calcule la majorité des infos quand la fonction ne peut plus "echouer"
+	; tracingChanges si on arrive ici, on peut envoyer les infos en database, on calcule la majorité des infos quand la
+	; fonction ne peut plus "echouer"
 	; currentPwrItem
 	; effect (à reconvertir) => attempt_effect
 	; currentReliquat => reliquat
@@ -1744,7 +1770,8 @@ ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; funApplyAtt
 		if (tampon_reliquat <= 0 and found_plus_reliquat)
 		{
 			tampon_reliquat := tampon_reliquat - rune_residual_pwr
-			attempt_result := "ns" ; special case exception where the rune cancel itself but remove other stats anyways thus creating reliquat
+			attempt_result := "ns" ; special case exception where the rune cancel itself but remove other stats anyways
+								   ; thus creating reliquat
 		}
 		reliquat := reliquat + tampon_reliquat
 		; MsgBox, reliquat : %reliquat% tampon_reliquat : %tampon_reliquat% : %attempt_result%
@@ -1760,7 +1787,8 @@ ApplyAttemptChanges(attempt_value, attempt_effect, history_result) ; funApplyAtt
 	; }
 	
 	; dbhandler
-	attempt_id := dbhandler.AddAttempt(attempt_effect, reliquat_before, attempt_attemptedPwrEffect, attempt_currentPwrItem, attempt_result)
+	attempt_id := dbhandler.AddAttempt(attempt_effect, reliquat_before, attempt_attemptedPwrEffect
+		, attempt_currentPwrItem, attempt_result)
 	; add current status of the item
 	For index_eff, eff in def_index
 	{
@@ -1888,7 +1916,8 @@ GetNeededReliquat(objective) ; funGetNeededReliquat
 	final_reliquat := 0
 	For index, value in objective
 	{
-		if (def_index[index] != "Prospection" and effects_index[def_index[index]][key_pwr] < reliquat) ; yolo doit tenir compte des trash autre que prospection
+		if (def_index[index] != "Prospection" and effects_index[def_index[index]][key_pwr] < reliquat) 
+		; yolo doit tenir compte des trash autre que prospection
 		{
 			current_reliquat := current_reliquat + ConvertToReliquat(vef_index[index], def_index[index], 0)
 			final_reliquat := final_reliquat + ConvertToReliquat(value, def_index[index], 0)
@@ -1905,7 +1934,8 @@ GetCurrentOverPwr(ignore_index := 0) ; funGetCurrentOverPwr
 	{
 		if (vef_index[index] > max_index[index] and index != ignore_index)
 		{
-			current_over_pwr := current_over_pwr + ConvertToReliquat(vef_index[index], def_index[index], 0) - ConvertToReliquat(max_index[index], def_index[index], 0)
+			current_over_pwr := current_over_pwr + ConvertToReliquat(vef_index[index], def_index[index], 0)
+				- ConvertToReliquat(max_index[index], def_index[index], 0)
 		}
 	}
 	return current_over_pwr
@@ -1932,10 +1962,10 @@ HasValue(haystack, needle) ; funHasValue
 
 ChooseRune(objective, adapted := true, bypass := true, force_objective := false) ; funChooseRune
 {
-	global max_index, min_index, effects_index, modif_max_index, key_blank, key_pa, key_ra, key_pwr, def_index, vef_index
-		, floors_index, key_stdfloors, key_basic_std, key_basic_spe, key_pa_std, key_pa_spe, final_floors_index
-		, tolerances_index, trash_exception, current_trash, trash_bin, reliquat, reliquat_exception, auto_bypass
-		, over_floors_index, over_tolerances_index, destroyer_effect, over_index
+	global max_index, min_index, effects_index, modif_max_index, key_blank, key_pa, key_ra, key_pwr, def_index
+		, vef_index, floors_index, key_stdfloors, key_basic_std, key_basic_spe, key_pa_std, key_pa_spe
+		, final_floors_index, tolerances_index, trash_exception, current_trash, trash_bin, reliquat, reliquat_exception
+		, auto_bypass, over_floors_index, over_tolerances_index, destroyer_effect, over_index
 	if (over_index != 0 and destroyer_effect != "")
 	{
 		if (vef_index[over_index] > max_index[over_index])
@@ -1991,7 +2021,8 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 		max_pwr := 0
 		For index_exo, exo in def_index
 		{
-			if (adapted_objective[index_exo] - max_index[index_exo] = 1 and effects_index[exo][key_pwr] >= reliquat_exception) ; yolo objective changed
+			if (adapted_objective[index_exo] - max_index[index_exo] = 1 
+				and effects_index[exo][key_pwr] >= reliquat_exception) ; yolo objective changed
 			{
 				if (effects_index[exo][key_pwr] > max_pwr)
 				{
@@ -2095,13 +2126,24 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 					break
 				}
 			}
-			if (def != exo_effect and (auto_bypass = true or ConvertToReliquat(minimal_delta, def, vef_index[index]) + reliquat >= 0)) ; yolo adapted condition
+			if (def != exo_effect and (auto_bypass = true or ConvertToReliquat(minimal_delta, def, vef_index[index])
+				+ reliquat >= 0)) ; yolo adapted condition
 			{
-				if (minimal_delta <= adapted_objective[index] - vef_index[index] or (adapted_objective[index] - vef_index[index] > over_tolerance and minimal_delta != adapted_objective[index] and !(ConvertToReliquat(max_index[index], def, 0) < -101 and ConvertToReliquat(vef_index[index] + minimal_delta, def, 0) < ConvertToReliquat(max_index[index], def, 0)))) ; yolo maximal over power rate condition (last)
+				if (minimal_delta <= adapted_objective[index] - vef_index[index]
+					or (adapted_objective[index] - vef_index[index] > over_tolerance 
+						and minimal_delta != adapted_objective[index] 
+						and !(ConvertToReliquat(max_index[index], def, 0) < -101 
+						and ConvertToReliquat(vef_index[index] + minimal_delta, def, 0) 
+							< ConvertToReliquat(max_index[index], def, 0)))) 
+						; yolo maximal over power rate condition (last)
 				{
-					if ((effects_index[def][key_pwr] = pwr_effect and adapted_objective[index] - vef_index[index] > delta_value) or effects_index[def][key_pwr] > pwr_effect)
+					if ((effects_index[def][key_pwr] = pwr_effect 
+							and adapted_objective[index] - vef_index[index] > delta_value) 
+						or effects_index[def][key_pwr] > pwr_effect)
 					{
-						if (adapted_objective[index] - vef_index[index] > over_tolerance and minimal_delta != adapted_objective[index] and !(minimal_delta <= adapted_objective[index] - vef_index[index]))
+						if (adapted_objective[index] - vef_index[index] > over_tolerance 
+							and minimal_delta != adapted_objective[index] 
+							and !(minimal_delta <= adapted_objective[index] - vef_index[index]))
 						{
 							over_index := index
 							max_value := vef_index[index] + minimal_delta
@@ -2164,7 +2206,8 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 			{
 				value := ra
 			}
-			else if (pa != "" and (pa < max_delta_value or (pa = max_delta_value and current_value + blank > floor_basic)))
+			else if (pa != "" and (pa < max_delta_value
+				or (pa = max_delta_value and current_value + blank > floor_basic)))
 			{
 				value := pa
 			}
@@ -2192,7 +2235,10 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 		{
 			return ChooseRune(objective, adapted, true)
 		}
-		else if (effect != "" and current_value + value > max_value and (GetCurrentOverPwr() + ConvertToReliquat(current_value + value, effect, 0) - ConvertToReliquat(max_value, effect, 0) < -101 or ConvertToReliquat(current_value + value, effect, 0) < -101))
+		else if (effect != "" and current_value + value > max_value
+			and (GetCurrentOverPwr() + ConvertToReliquat(current_value + value, effect, 0) 
+					- ConvertToReliquat(max_value, effect, 0) < -101 
+				or ConvertToReliquat(current_value + value, effect, 0) < -101))
 		{
 			return [0, ""]
 		}
@@ -2275,13 +2321,15 @@ UseRune(value, effect) ; funUseRune
 		key_xy_s := "run_xy_s"
 		key_x_d := "run_x_d"
 		key_y_d := "run_y_d"
-		y := ConvertToPx(y_5_4_s, locations_index[key_xy_s][key_y], height_5_4, locations_index[key_y_d][key_y], y_index - 1)
+		y := ConvertToPx(y_5_4_s, locations_index[key_xy_s][key_y], height_5_4, locations_index[key_y_d][key_y]
+			, y_index - 1)
 		if (x_index = 0)
 		{
 			MsgBox, Fatal _error _no rune found
 			return ""
 		}
-		x := ConvertToPx(x_5_4_s, locations_index[key_xy_s][key_x], width_5_4, locations_index[key_x_d][key_x], x_index - 1)
+		x := ConvertToPx(x_5_4_s, locations_index[key_xy_s][key_x], width_5_4, locations_index[key_x_d][key_x]
+			, x_index - 1)
 	}
 	
 	delay_ms := 0
@@ -2425,7 +2473,8 @@ MainRoutine() ; funMainRoutine
 							{
 								MsgBox, erreur effet d objectif pas enregistre %effect%
 							}
-							else if (objective[index_def_effect] > modif_max_index[index_def_effect]) ; yolo condition changed 
+							else if (objective[index_def_effect] > modif_max_index[index_def_effect]) 
+							; yolo condition changed 
 							{
 								index_over_1 := index_def_effect
 								break
@@ -2433,12 +2482,20 @@ MainRoutine() ; funMainRoutine
 						}
 						if (index_over_1 != 0)
 						{
-							if (objective[index_over_1] > vef_index[index_over_1] and (reliquat - GetCurrentOverPwr(index_over_1) + ConvertToReliquat(objective[index_over_1], def_index[index_over_1], 0) - ConvertToReliquat(vef_index[index_over_1], def_index[index_over_1], 0) >= 0)) ; yolo a test (prend en compte les over d'effets differents pour du reliquat
+							if (objective[index_over_1] > vef_index[index_over_1] 
+								and (reliquat - GetCurrentOverPwr(index_over_1)
+									+ ConvertToReliquat(objective[index_over_1], def_index[index_over_1], 0) 
+									- ConvertToReliquat(vef_index[index_over_1], def_index[index_over_1], 0) >= 0))
+								; yolo a test (prend en compte les over d'effets differents pour du reliquat
 							{
 								auto_bypass := false
 								rune := ChooseRune(objective, false, false)
 							}
-							else if (objective[index_over_1] = vef_index[index_over_1] or (HasValue(instructions_index[_priority][key_effects], def_index[index_over_1]) = instructions_index[_priority][key_effects].Length() and objective[index_over_1] - max_index[index_over_1] = 1)) ; yolo condition changed
+							else if (objective[index_over_1] = vef_index[index_over_1]
+								or (HasValue(instructions_index[_priority][key_effects], def_index[index_over_1]) 
+									= instructions_index[_priority][key_effects].Length() 
+										and objective[index_over_1] - max_index[index_over_1] = 1)) 
+								; yolo condition changed
 							{
 								rune := ChooseRune(modif_max_index, false, true)
 								if (rune[1] = 0)
