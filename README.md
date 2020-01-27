@@ -14,6 +14,8 @@ faille lag => perte du jet courant (rare)
 
 FreeOcr erreur de capture clipboard (due à la haute priorité du script?) (rare)
 
+probleme de recalibrage si la rune n'est pas placee (jet est perdu et il ne recalibre pas -> probleme de logique)
+
 # problemes :
 
 cas d'un corps a corps à 2 lignes identiques + echec de lecture du jet maximal : faire en sorte d'ignorer totalement les lignes de degats
