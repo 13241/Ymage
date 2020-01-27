@@ -153,3 +153,7 @@ probleme : desynchronisation :
 -> faire la verification du dernier reliquat ajoute
 
 -> probleme d'over 2 force -> 1 pa blocage
+
+-> si reliquat et consignes inferieures au max, tenter de parfaire l'item avant d'exo
+
+-> diminuer le timer de non capture fusionner
