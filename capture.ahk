@@ -2344,13 +2344,13 @@ UseRune(value, effect) ; funUseRune
 	; on peut certifier qu'on a fait le fusionner si on capture que fusionner est devenu gris après le clic
 	PixelGetColor, cur_hex_fus, %x_fus%, %y_fus%, Slow
 	i := 0
-	while(cur_hex_fus != dark_hex_fus and i < 100)
+	while(cur_hex_fus != dark_hex_fus and i < 50)
 	{
 		i := i + 1
 		Sleep, 25
 		PixelGetColor, cur_hex_fus, %x_fus%, %y_fus%, Slow
 	}
-	if (i = 100 and cur_hex_fus != dark_hex_fus)
+	if (i = 50 and cur_hex_fus != dark_hex_fus)
 	{
 		if (not IsBrightHexFus(cur_hex_fus))
 		{
