@@ -37,6 +37,8 @@ ne compte pas le trash over comme du reliquat (p-ex 2 chance et 43 reliquat => 4
 
 si un jet est au dessus du max lors de la calibration, enclencher la procédure de vide trash
 
+dans le cas d'un perfect avec reliquat_exception, ne finit pas l'item
+
 # problemes disparus (?)
 
 problème : tente over puissance

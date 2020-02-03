@@ -2133,8 +2133,7 @@ ChooseRune(objective, adapted := true, bypass := true, force_objective := false)
 					or (adapted_objective[index] - vef_index[index] > over_tolerance 
 						and minimal_delta != adapted_objective[index] 
 						and !(ConvertToReliquat(max_index[index], def, 0) < -101 
-						and ConvertToReliquat(vef_index[index] + minimal_delta, def, 0) 
-							< ConvertToReliquat(max_index[index], def, 0)))) 
+						and ConvertToReliquat(vef_index[index] + minimal_delta, def, 0) < ConvertToReliquat(max_index[index], def, 0)))) 
 						; yolo maximal over power rate condition (last)
 				{
 					if ((effects_index[def][key_pwr] = pwr_effect 

@@ -1,6 +1,5 @@
 effet;valeur;priorité;exception
-Initiative;0;-1;1000
-Force;48;1;
-Sagesse;27;1;
-Retrait PM;6;1;
+Chance;0;-1;28
+Prospection;0;0;
+Retrait PM;6;max;
 PA;1;2;
